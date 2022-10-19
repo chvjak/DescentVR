@@ -1,0 +1,53 @@
+cmake_minimum_required(VERSION 3.4.1)
+
+include_directories(src/lib)
+
+add_subdirectory(src/2d 2d)
+add_subdirectory(src/3d 3d)
+add_subdirectory(src/cfile cfile)
+add_subdirectory(src/fix fix)
+add_subdirectory(src/iff iff)
+add_subdirectory(src/io io)
+add_subdirectory(src/main main)
+add_subdirectory(src/mem mem)
+add_subdirectory(src/misc misc)
+add_subdirectory(src/texmap texmap)
+add_subdirectory(src/ui ui)
+add_subdirectory(src/vecmat vecmat)
+
+set(SOURCES
+		main.c
+)
+
+add_library(descentcore SHARED ${SOURCES})
+
+find_library(log-lib log)
+find_library(GLESv1_CM-lib GLESv1_CM)
+find_library(EGL-lib EGL)
+find_library(dl-lib dl)
+find_library(android-lib android)
+find_library(OpenSLES-lib OpenSLES)
+
+target_link_libraries(descentcore ${log-lib})
+target_link_libraries(descentcore ${GLESv1_CM-lib})
+target_link_libraries(descentcore ${EGL-lib})
+target_link_libraries(descentcore ${dl-lib})
+target_link_libraries(descentcore ${android-lib})
+target_link_libraries(descentcore ${OpenSLES-lib})
+
+target_link_libraries(descentcore cfile)
+target_link_libraries(descentcore main-android)
+target_link_libraries(descentcore main)
+target_link_libraries(descentcore 3d)
+target_link_libraries(descentcore 3d-ogles)
+target_link_libraries(descentcore 2d)
+target_link_libraries(descentcore 2d-ogles)
+target_link_libraries(descentcore fix)
+target_link_libraries(descentcore iff)
+target_link_libraries(descentcore io)
+target_link_libraries(descentcore mem)
+target_link_libraries(descentcore misc)
+target_link_libraries(descentcore texmap)
+target_link_libraries(descentcore texmap-ogles)
+target_link_libraries(descentcore ui)
+target_link_libraries(descentcore vecmat)
