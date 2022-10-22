@@ -18,20 +18,17 @@ android {
     // will replace an older one.
     applicationId "com.chvjak." + project.archivesBaseName
     minSdkVersion 29
-    targetSdkVersion 29
+    targetSdkVersion 33
     compileSdkVersion 29
 
     // override app plugin abiFilters for 64-bit support
     externalNativeBuild {
-        ndk {
-                abiFilters 'arm64-v8a'
-        }
-        ndkBuild {
-                abiFilters 'arm64-v8a'
-        }
-        cmake {
-            cFlags "-DANDROID_NDK", "-DDISABLE_IMPORTGL", "-DOGLES", "-DNASM", "-DNETWORK"
-        }
+      ndk {
+        abiFilters 'arm64-v8a'
+      }
+      ndkBuild {
+        abiFilters 'arm64-v8a'
+      }
     }
   }
 
@@ -49,12 +46,6 @@ android {
     disable 'ExpiredTargetSdkVersion'
   }
 
-  externalNativeBuild {
-      cmake {
-          path "DescentCore/CMakeLists.txt"
-          version "3.10.2"
-      }
-  }
 
 
 }
