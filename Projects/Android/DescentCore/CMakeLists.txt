@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 include_directories(src/lib)
+include_directories(C:/Users/Dmytro/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include)
+include_directories(C:/Users/Dmytro/AppData/Local/Android/Sdk/ndk/25.1.8937393/sources/android/native_app_glue)
+include_directories(D:/Users/Dmytro/Documents/Oculus-SDK/VrApi/Include)
 
 add_subdirectory(src/2d 2d)
 add_subdirectory(src/3d 3d)
@@ -16,6 +19,7 @@ add_subdirectory(src/ui ui)
 add_subdirectory(src/vecmat vecmat)
 
 set(SOURCES
+		vr.c
 		main.c
 )
 
