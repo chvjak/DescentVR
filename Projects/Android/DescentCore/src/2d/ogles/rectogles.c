@@ -6,7 +6,7 @@
 //  Copyright © 2015 Devin Tuchsen. All rights reserved.
 //
 
-#ifdef OGLES
+#ifdef OGLES1
 #ifdef ANDROID_NDK
 #include <GLES/gl.h>
 #else
@@ -42,4 +42,6 @@ void gr_rect_ogles(int left, int top, int right, int bot) {
 	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
+#else
+void gr_rect_ogles(int left, int top, int right, int bot) {}
 #endif

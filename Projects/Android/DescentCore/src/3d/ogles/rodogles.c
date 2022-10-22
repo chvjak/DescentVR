@@ -5,10 +5,10 @@
 //  Created by Devin Tuchsen on 11/2/15.
 //  Copyright © 2015 Devin Tuchsen. All rights reserved.
 //
-
-#ifdef OGLES
 #include "rodogles.h"
 #include "oglestex.h"
+
+#ifdef OGLES1
 
 bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm) {
 	GLfloat x0f, y0f, x1f, y1f, zf;
@@ -39,5 +39,6 @@ bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm)
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	return 0;
 }
-
+#else
+bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm) { return 0;}
 #endif

@@ -5,18 +5,18 @@
 //  Created by Devin Tuchsen on 10/29/15.
 //  Copyright © 2015 Devin Tuchsen. All rights reserved.
 //
-
-#ifdef OGLES
-#ifdef ANDROID_NDK
-#include <GLES/gl.h>
-#else
-#include <OpenGLES/ES1/gl.h>
-#endif
 #include <math.h>
 #include <string.h>
 #include "gr.h"
 #include "scaleogles.h"
 #include "oglestex.h"
+
+#ifdef OGLES1
+#ifdef ANDROID_NDK
+#include <GLES/gl.h>
+#else
+#include <OpenGLES/ES1/gl.h>
+#endif
 
 extern ubyte gr_current_pal[256*3];
 extern ubyte *gr_bitblt_fade_table;
@@ -64,4 +64,6 @@ void scale_bitmap_ogles(grs_bitmap *bp, int x0, int y0, int x1, int y1) {
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
+#else
+void scale_bitmap_ogles(grs_bitmap *bp, int x0, int y0, int x1, int y1) {}
 #endif

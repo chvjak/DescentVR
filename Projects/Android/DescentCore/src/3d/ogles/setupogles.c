@@ -6,7 +6,7 @@
 //  Copyright © 2015 Devin Tuchsen. All rights reserved.
 //
 
-#ifdef OGLES
+#ifdef OGLES1
 #ifdef ANDROID_NDK
 #include <GLES/gl.h>
 #else
@@ -62,5 +62,9 @@ void g3_ogles_end_frame() {
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_ALPHA_TEST);
 }
+
+#else
+void g3_ogles_start_frame() {}
+void g3_ogles_end_frame() {}
 
 #endif

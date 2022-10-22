@@ -6,13 +6,14 @@
 //  Copyright © 2015 Devin Tuchsen. All rights reserved.
 //
 
-#ifdef OGLES
 #include <math.h>
 #include "drawogles.h"
 #include "globvars.h"
 #include "gr.h"
 #include "3d.h"
 #include "mem.h"
+
+#ifdef OGLES1
 
 extern ubyte gr_current_pal[256*3];
 extern int Gr_scanline_darkening_level;
@@ -134,7 +135,7 @@ int g3_draw_sphere_ogles(g3s_point *pnt, fix rad) {
 
 	for (i = 19; i >= 0; --i) {
 		float theta = 2.0f * M_PI * (float)i / 20.0f;
-		
+
 		vertices[i * 3] = x + sin(theta) * rx;
 		vertices[i * 3 + 1] = y + cos(theta) * ry;
 		vertices[i * 3 + 2] = z;
@@ -150,5 +151,12 @@ int g3_draw_sphere_ogles(g3s_point *pnt, fix rad) {
 	glDisableClientState(GL_VERTEX_ARRAY);
 	return 1;
 }
+
+
+#else
+int g3_draw_tmap_ogles(int nv, g3s_point **pointlist, g3s_uvl *uvl_list, grs_bitmap *bm) {return 1;}
+int g3_draw_poly_ogles(int nv, g3s_point **pointlist) { return 1;}
+int g3_draw_line_ogles(g3s_point *p0, g3s_point *p1) {return 1;}
+int g3_draw_sphere_ogles(g3s_point *pnt, fix rad) {return 1;}
 
 #endif

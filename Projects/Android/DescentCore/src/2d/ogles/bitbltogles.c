@@ -6,13 +6,13 @@
 //  Copyright © 2015 Devin Tuchsen. All rights reserved.
 //
 
-#ifdef OGLES
 #include "bitbltogles.h"
 #include "oglestex.h"
 #include "scaleogles.h"
 #include "viewcontrollerc.h"
 #include "gr.h"
 
+#ifdef OGLES1
 void gr_ubitmapm_ogles(int dx, int dy, grs_bitmap * src) {
 	GLfloat x0f, y0f, x1f, y1f;
 	
@@ -41,4 +41,6 @@ void gr_ubitmapm_ogles(int dx, int dy, grs_bitmap * src) {
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
+#else
+void gr_ubitmapm_ogles(int dx, int dy, grs_bitmap * src) {}
 #endif
