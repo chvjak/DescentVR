@@ -1,5 +1,5 @@
 // Copyright (c) Facebook Technologies, LLC and its affiliates. All Rights reserved.
-package com.chvjak.descent;
+package com.chvjak.descentvr;
 
 /**
  * When using NativeActivity, we currently need to handle loading of dependent shared libraries
