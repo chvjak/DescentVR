@@ -28,11 +28,9 @@ FILE_LIST := \
  $(wildcard $(DESCENT_PATH)vecmat/*.c) \
  $(wildcard $(DESCENT_PATH)java-glue/*.c)
 
-
 LOCAL_SRC_FILES := main.c \
                    vr.c \
                    $(FILE_LIST:$(LOCAL_PATH)/%=%)
-
 
 LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl  -lGLESv3
 

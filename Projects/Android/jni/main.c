@@ -15,9 +15,48 @@
 #include <GLES3/gl3ext.h>
 
 #include "vr.h"
+#include "3d.h"
 
 void game_loop(ovrApp* appState)
 {
+    // game.c::game(){GameLoop()}
+    // GameLoop(){game_render_frame(); object_move_all()}
+    //    object_move_all() {object_move_one( i );}
+    //    render.c::render_frame() should happen here
+    //       render.c:: render_mine(int start_seg_num, fix eye_offset)
+    //         render_segment(i){render_side(k); do_render_object(j)}
+    //           render_side(){render_face()}
+    //             render_face(){g3_draw_tmap()}
+    //               g3_draw_tmap(int nv, g3s_point **pointlist, g3s_uvl *uvl_list, grs_bitmap *bm)
+    //           do_render_object(j){draw_polygon_object() or other types like powerup or morh(wtf?)}
+    //             draw_polygon_object(){draw_polygon_model(...,obj->rtype.pobj_info.model_num,..)}
+    //               draw_polygon_model(){g3_draw_polygon_model(void *model_ptr, grs_bitmap **model_bitmaps)} - for animation
+    //                 g3_draw_polygon_model(){g3_draw_tmap(); or recurse for to draw back to front}
+    //                   g3_draw_tmap() - as for walls
+
+    //        Segment_points[] - walls, SEE ALSO: segment, segments.h TODO: figure out where loaded
+    //        Vertices[] - also walls?
+    // objects - all sorts of stuff, rendered as bitmaps, or polygonal models, SEE ALSO: objects.h
+    // segment->objects - objects in the sector
+    // objects.h::object - big struct
+    // polyobj.h:: polymodel Polygon_models[] - models
+    // polyobj.h::g3s_point robot_points[]; - actual model data?
+
+
+    /*
+    typedef struct {
+        int Width;
+        int Height;
+        int Multisamples;
+        int TextureSwapChainLength;
+        int TextureSwapChainIndex;
+        bool UseMultiview;
+        ovrTextureSwapChain* ColorTextureSwapChain;
+        GLuint* DepthBuffers;
+        GLuint* FrameBuffers;
+    } ovrFramebuffer;
+    */
+
     while(true)
     {
             // This is the only place the frame index is incremented, right before
@@ -55,7 +94,6 @@ void game_loop(ovrApp* appState)
                    NUM_INSTANCES * sizeof(ovrMatrix4f),
                    GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
 
-            // WTF?
             for (int i = 0; i < NUM_INSTANCES; i++) {
                 const int index = scene->CubeRotations[i];
 
@@ -139,13 +177,10 @@ void game_loop(ovrApp* appState)
                     GL_UNIFORM_BUFFER,
                     scene->Program.UniformBinding[UNIFORM_SCENE_MATRICES],
                     scene->SceneMatrices));
-                if (scene->Program.UniformLocation[UNIFORM_VIEW_ID] >=
-                    0) // NOTE: will not be present when multiview path is enabled.
+                if (scene->Program.UniformLocation[UNIFORM_VIEW_ID] >= 0) // NOTE: will not be present when multiview path is enabled.
                 {
                     GL(glUniform1i(scene->Program.UniformLocation[UNIFORM_VIEW_ID], eye));
                 }
-
-                // DRAW
 
                 GL(glEnable(GL_SCISSOR_TEST));
                 GL(glDepthMask(GL_TRUE));
@@ -155,11 +190,13 @@ void game_loop(ovrApp* appState)
                 GL(glCullFace(GL_BACK));
                 GL(glViewport(0, 0, frameBuffer->Width, frameBuffer->Height));
                 GL(glScissor(0, 0, frameBuffer->Width, frameBuffer->Height));
+
+                // DRAW
                 GL(glClearColor(0.125f, 0.0f, 0.125f, 1.0f));
                 GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                 GL(glBindVertexArray(scene->Cube.VertexArrayObject));
-                GL(glDrawElementsInstanced(
-                    GL_TRIANGLES, scene->Cube.IndexCount, GL_UNSIGNED_SHORT, NULL, NUM_INSTANCES));
+                GL(glDrawElementsInstanced(GL_TRIANGLES, scene->Cube.IndexCount, GL_UNSIGNED_SHORT, NULL, NUM_INSTANCES));
+
                 GL(glBindVertexArray(0));
                 GL(glUseProgram(0));
 
@@ -296,7 +333,135 @@ void android_main(struct android_app* app) {
 
     const double startTime = GetTimeInSeconds();
 
-    game_loop(&appState);
+    while (app->destroyRequested == 0) {
+        // Read all pending events.
+        for (;;) {
+            int events;
+            struct android_poll_source* source;
+            const int timeoutMilliseconds =
+                    (appState.Ovr == NULL && app->destroyRequested == 0) ? -1 : 0;
+            if (ALooper_pollAll(timeoutMilliseconds, NULL, &events, (void**)&source) < 0) {
+                break;
+            }
+
+            // Process this event.
+            if (source != NULL) {
+                source->process(app, source);
+            }
+
+            ovrApp_HandleVrModeChanges(&appState);
+        }
+
+        // We must read from the event queue with regular frequency.
+        ovrApp_HandleVrApiEvents(&appState);
+
+        ovrApp_HandleInput(&appState);
+
+        if (appState.Ovr == NULL) {
+            continue;
+        }
+
+        // Create the scene if not yet created.
+        // The scene is created here to be able to show a loading icon.
+        if (!ovrScene_IsCreated(&appState.Scene)) {
+#if MULTI_THREADED
+            // Show a loading icon.
+            ovrRenderThread_Submit(
+                &appState.RenderThread,
+                appState.Ovr,
+                RENDER_LOADING_ICON,
+                appState.FrameIndex,
+                appState.DisplayTime,
+                appState.SwapInterval,
+                NULL,
+                NULL,
+                NULL);
+#else
+            // Show a loading icon.
+            int frameFlags = 0;
+            frameFlags |= VRAPI_FRAME_FLAG_FLUSH;
+
+            ovrLayerProjection2 blackLayer = vrapi_DefaultLayerBlackProjection2();
+            blackLayer.Header.Flags |= VRAPI_FRAME_LAYER_FLAG_INHIBIT_SRGB_FRAMEBUFFER;
+
+            ovrLayerLoadingIcon2 iconLayer = vrapi_DefaultLayerLoadingIcon2();
+            iconLayer.Header.Flags |= VRAPI_FRAME_LAYER_FLAG_INHIBIT_SRGB_FRAMEBUFFER;
+
+            const ovrLayerHeader2* layers[] = {
+                    &blackLayer.Header,
+                    &iconLayer.Header,
+            };
+
+            ovrSubmitFrameDescription2 frameDesc = {0};
+            frameDesc.Flags = frameFlags;
+            frameDesc.SwapInterval = 1;
+            frameDesc.FrameIndex = appState.FrameIndex;
+            frameDesc.DisplayTime = appState.DisplayTime;
+            frameDesc.LayerCount = 2;
+            frameDesc.Layers = layers;
+
+            vrapi_SubmitFrame2(appState.Ovr, &frameDesc);
+#endif
+
+            // Create the scene.
+            ovrScene_Create(&appState.Scene, appState.UseMultiview);
+        }
+
+        // This is the only place the frame index is incremented, right before
+        // calling vrapi_GetPredictedDisplayTime().
+        appState.FrameIndex++;
+
+        // Get the HMD pose, predicted for the middle of the time period during which
+        // the new eye images will be displayed. The number of frames predicted ahead
+        // depends on the pipeline depth of the engine and the synthesis rate.
+        // The better the prediction, the less black will be pulled in at the edges.
+        const double predictedDisplayTime =
+                vrapi_GetPredictedDisplayTime(appState.Ovr, appState.FrameIndex);
+        const ovrTracking2 tracking =
+                vrapi_GetPredictedTracking2(appState.Ovr, predictedDisplayTime);
+
+        appState.DisplayTime = predictedDisplayTime;
+
+        // Advance the simulation based on the elapsed time since start of loop till predicted
+        // display time.
+        ovrSimulation_Advance(&appState.Simulation, predictedDisplayTime - startTime);
+
+#if MULTI_THREADED
+        // Render the eye images on a separate thread.
+        ovrRenderThread_Submit(
+            &appState.RenderThread,
+            appState.Ovr,
+            RENDER_FRAME,
+            appState.FrameIndex,
+            appState.DisplayTime,
+            appState.SwapInterval,
+            &appState.Scene,
+            &appState.Simulation,
+            &tracking);
+#else
+        // Render eye images and setup the primary layer using ovrTracking2.
+        const ovrLayerProjection2 worldLayer = ovrRenderer_RenderFrame(
+                &appState.Renderer,
+                &appState.Java,
+                &appState.Scene,
+                &appState.Simulation,
+                &tracking,
+                appState.Ovr);
+
+        const ovrLayerHeader2* layers[] = {&worldLayer.Header};
+
+        ovrSubmitFrameDescription2 frameDesc = {0};
+        frameDesc.Flags = 0;
+        frameDesc.SwapInterval = appState.SwapInterval;
+        frameDesc.FrameIndex = appState.FrameIndex;
+        frameDesc.DisplayTime = appState.DisplayTime;
+        frameDesc.LayerCount = 1;
+        frameDesc.Layers = layers;
+
+        // Hand over the eye images to the time warp.
+        vrapi_SubmitFrame2(appState.Ovr, &frameDesc);
+#endif
+    }
 
 #if MULTI_THREADED
     ovrRenderThread_Destroy(&appState.RenderThread);
@@ -310,3 +475,4 @@ void android_main(struct android_app* app) {
 
     (*java.Vm)->DetachCurrentThread(java.Vm);
 }
+

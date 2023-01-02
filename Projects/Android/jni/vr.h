@@ -101,7 +101,7 @@ static const int CPU_LEVEL = 2;
 static const int GPU_LEVEL = 3;
 static const int NUM_MULTI_SAMPLES = 4;
 
-#define MULTI_THREADED 0
+//#define MULTI_THREADED 0
 
 /*
 ================================================================================
@@ -374,7 +374,7 @@ typedef struct {
 
 void ovrScene_Clear(ovrScene* scene);
 
-static bool ovrScene_IsCreated(ovrScene* scene);
+bool ovrScene_IsCreated(ovrScene* scene);
 
 void ovrScene_CreateVAOs(ovrScene* scene) ;
 void ovrScene_DestroyVAOs(ovrScene* scene) ;
@@ -420,7 +420,7 @@ void ovrRenderer_Create(ovrRenderer* renderer, const ovrJava* java, const bool u
 
 void ovrRenderer_Destroy(ovrRenderer* renderer);
 
-static ovrLayerProjection2 ovrRenderer_RenderFrame(
+ovrLayerProjection2 ovrRenderer_RenderFrame(
     ovrRenderer* renderer,
     const ovrJava* java,
     const ovrScene* scene,

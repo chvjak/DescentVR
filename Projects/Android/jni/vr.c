@@ -771,7 +771,7 @@ void ovrScene_Clear(ovrScene* scene) {
     ovrGeometry_Clear(&scene->Cube);
 }
 
-static bool ovrScene_IsCreated(ovrScene* scene) {
+bool ovrScene_IsCreated(ovrScene* scene) {
     return scene->CreatedScene;
 }
 
@@ -974,7 +974,7 @@ void ovrRenderer_Destroy(ovrRenderer* renderer) {
     }
 }
 
-static ovrLayerProjection2 ovrRenderer_RenderFrame(
+ovrLayerProjection2 ovrRenderer_RenderFrame(
     ovrRenderer* renderer,
     const ovrJava* java,
     const ovrScene* scene,
@@ -991,11 +991,11 @@ static ovrLayerProjection2 ovrRenderer_RenderFrame(
 
     // Update the instance transform attributes.
     GL(glBindBuffer(GL_ARRAY_BUFFER, scene->InstanceTransformBuffer));
-    GL(ovrMatrix4f* cubeTransforms = (ovrMatrix4f*)glMapBufferRange(
-           GL_ARRAY_BUFFER,
-           0,
-           NUM_INSTANCES * sizeof(ovrMatrix4f),
-           GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+    ovrMatrix4f* cubeTransforms = (ovrMatrix4f*)GL(glMapBufferRange(
+                                                                            GL_ARRAY_BUFFER,
+                                                                            0,
+                                                                            NUM_INSTANCES * sizeof(ovrMatrix4f),
+                                                                            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
     for (int i = 0; i < NUM_INSTANCES; i++) {
         const int index = scene->CubeRotations[i];
 
@@ -1035,19 +1035,15 @@ static ovrLayerProjection2 ovrRenderer_RenderFrame(
 
     // Update the scene matrices.
     GL(glBindBuffer(GL_UNIFORM_BUFFER, scene->SceneMatrices));
-    GL(ovrMatrix4f* sceneMatrices = (ovrMatrix4f*)glMapBufferRange(
-           GL_UNIFORM_BUFFER,
-           0,
-           2 * sizeof(ovrMatrix4f) /* 2 view matrices */ +
-               2 * sizeof(ovrMatrix4f) /* 2 projection matrices */,
-           GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+    ovrMatrix4f* sceneMatrices = (ovrMatrix4f*)GL(glMapBufferRange(GL_UNIFORM_BUFFER,
+                                                                       0,
+                                                                       2 * sizeof(ovrMatrix4f) /* 2 view matrices */ +
+                                                                           2 * sizeof(ovrMatrix4f) /* 2 projection matrices */,
+                                                                       GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
 
     if (sceneMatrices != NULL) {
         memcpy((char*)sceneMatrices, &eyeViewMatrixTransposed, 2 * sizeof(ovrMatrix4f));
-        memcpy(
-            (char*)sceneMatrices + 2 * sizeof(ovrMatrix4f),
-            &projectionMatrixTransposed,
-            2 * sizeof(ovrMatrix4f));
+        memcpy((char*)sceneMatrices + 2 * sizeof(ovrMatrix4f), &projectionMatrixTransposed,2 * sizeof(ovrMatrix4f));
     }
 
     GL(glUnmapBuffer(GL_UNIFORM_BUFFER));
@@ -1059,8 +1055,7 @@ static ovrLayerProjection2 ovrRenderer_RenderFrame(
         ovrFramebuffer* frameBuffer = &renderer->FrameBuffer[renderer->NumBuffers == 1 ? 0 : eye];
         layer.Textures[eye].ColorSwapChain = frameBuffer->ColorTextureSwapChain;
         layer.Textures[eye].SwapChainIndex = frameBuffer->TextureSwapChainIndex;
-        layer.Textures[eye].TexCoordsFromTanAngles =
-            ovrMatrix4f_TanAngleMatrixFromProjection(&updatedTracking.Eye[eye].ProjectionMatrix);
+        layer.Textures[eye].TexCoordsFromTanAngles = ovrMatrix4f_TanAngleMatrixFromProjection(&updatedTracking.Eye[eye].ProjectionMatrix);
     }
     layer.Header.Flags |= VRAPI_FRAME_LAYER_FLAG_CHROMATIC_ABERRATION_CORRECTION;
 
