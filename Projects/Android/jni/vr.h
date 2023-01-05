@@ -254,7 +254,7 @@ static const char VERTEX_SHADER[] =
     "out vec4 fragmentColor;\n"
     "void main()\n"
     "{\n"
-    "	gl_Position = sm.ProjectionMatrix[VIEW_ID] * ( sm.ViewMatrix[VIEW_ID] * ( vertexTransform * vec4( vertexPosition * 0.1, 1.0 ) ) );\n"
+    "	gl_Position = sm.ProjectionMatrix[VIEW_ID] * ( sm.ViewMatrix[VIEW_ID] * ( vec4( vertexPosition * 0.1, 1.0 ) ) );\n"
     "	fragmentColor = vertexColor;\n"
     "}\n";
 
@@ -356,8 +356,8 @@ ovrScene
 ================================================================================
 */
 
-#define NUM_INSTANCES 1500
-#define NUM_ROTATIONS 16
+#define NUM_INSTANCES 1
+#define NUM_ROTATIONS 1
 
 typedef struct {
     bool CreatedScene;
@@ -427,6 +427,15 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
     const ovrSimulation* simulation,
     const ovrTracking2* tracking,
     ovrMobile* ovr) ;
+
+ovrLayerProjection2 ovrRenderer_RenderFrame1(
+        ovrRenderer* renderer,
+        const ovrJava* java,
+        const ovrScene* scene,
+        const ovrSimulation* simulation,
+        const ovrTracking2* tracking,
+        ovrMobile* ovr) ;
+
 
 /*
 ================================================================================

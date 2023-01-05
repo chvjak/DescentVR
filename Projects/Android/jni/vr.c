@@ -409,6 +409,8 @@ void ovrProgram_Clear(ovrProgram* program) {
     memset(program->Textures, 0, sizeof(program->Textures));
 }
 
+GLint program_with_tex_id;
+
 static bool ovrProgram_Create(
     ovrProgram* program,
     const char* vertexSource,
@@ -447,6 +449,7 @@ static bool ovrProgram_Create(
     GL(program->Program = glCreateProgram());
     GL(glAttachShader(program->Program, program->VertexShader));
     GL(glAttachShader(program->Program, program->FragmentShader));
+    program_with_tex_id = program->Program;
 
     // Bind the vertex attribute locations.
     for (int i = 0; i < sizeof(ProgramVertexAttributes) / sizeof(ProgramVertexAttributes[0]); i++) {
@@ -974,17 +977,178 @@ void ovrRenderer_Destroy(ovrRenderer* renderer) {
     }
 }
 
+static const struct
+{
+    float x, y, z;
+} vertices[3] =
+        {
+                {  -127.f, -127.f, -300.f },
+                { 127.f, -127.f, -300.f },
+                {   0.f,  127.f, -300.f}
+        };
+
+static const struct
+{
+    float r, g, b, a;
+} colors[3] =
+        {
+                { 1.f, 0.f, 0.f, 1.f },
+                { 0.f, 1.f, 0.f, 1.f },
+                { 0.f, 0.f, 1.f, 1.f }
+        };
+
+void draw(GLuint program_id, int nv, GLfloat* vertices) {
+    GLint vpos_location = glGetAttribLocation(program_id, "vertexPosition");
+    glEnableVertexAttribArray(vpos_location);
+    GL(glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)vertices));
+
+    GLint vcol_location = glGetAttribLocation(program_id, "vertexColor");
+    glEnableVertexAttribArray(vcol_location);
+    GL(glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(colors[0]), (void*)&colors));
+
+    GL(glDrawArrays(GL_TRIANGLE_FAN, 0, nv));
+
+    glDisableVertexAttribArray(vpos_location);
+}
+
 ovrLayerProjection2 ovrRenderer_RenderFrame(
+        ovrRenderer* renderer,
+        const ovrJava* java,
+        const ovrScene* scene,
+        const ovrSimulation* simulation,
+        const ovrTracking2* tracking,
+        ovrMobile* ovr) {
+    ovrMatrix4f rotationMatrices; // NUM_ROTATIONS i.e 4 different rotations randomly assigned to objects
+    rotationMatrices = ovrMatrix4f_CreateRotation(
+            0, // radians * time
+            0,
+            0);
+
+    // Update the instance transform attributes.
+    GL(glBindBuffer(GL_ARRAY_BUFFER, scene->InstanceTransformBuffer));
+    ovrMatrix4f* modelMatrix = (ovrMatrix4f*)GL(glMapBufferRange(
+            GL_ARRAY_BUFFER,
+            0,
+             1 * sizeof(ovrMatrix4f),
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+
+    for (int i = 0; i < NUM_INSTANCES; i++) {
+        // Write in order in case the mapped buffer lives on write-combined memory.
+        modelMatrix[i].M[0][0] = rotationMatrices.M[0][0];
+        modelMatrix[i].M[0][1] = rotationMatrices.M[0][1];
+        modelMatrix[i].M[0][2] = rotationMatrices.M[0][2];
+        modelMatrix[i].M[0][3] = rotationMatrices.M[0][3];
+
+        modelMatrix[i].M[1][0] = rotationMatrices.M[1][0];
+        modelMatrix[i].M[1][1] = rotationMatrices.M[1][1];
+        modelMatrix[i].M[1][2] = rotationMatrices.M[1][2];
+        modelMatrix[i].M[1][3] = rotationMatrices.M[1][3];
+
+        modelMatrix[i].M[2][0] = rotationMatrices.M[2][0];
+        modelMatrix[i].M[2][1] = rotationMatrices.M[2][1];
+        modelMatrix[i].M[2][2] = rotationMatrices.M[2][2];
+        modelMatrix[i].M[2][3] = rotationMatrices.M[2][3];
+
+        modelMatrix[i].M[3][0] = 0;
+        modelMatrix[i].M[3][1] = 0;
+        modelMatrix[i].M[3][2] = 0;
+        modelMatrix[i].M[3][3] = 1.0f;
+    }
+    GL(glUnmapBuffer(GL_ARRAY_BUFFER));
+    GL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+
+    ovrTracking2 updatedTracking = *tracking;
+
+    ovrMatrix4f eyeViewMatrixTransposed[2];
+    eyeViewMatrixTransposed[0] = ovrMatrix4f_Transpose(&updatedTracking.Eye[0].ViewMatrix);
+    eyeViewMatrixTransposed[1] = ovrMatrix4f_Transpose(&updatedTracking.Eye[1].ViewMatrix);
+
+    ovrMatrix4f projectionMatrixTransposed[2];
+    projectionMatrixTransposed[0] = ovrMatrix4f_Transpose(&updatedTracking.Eye[0].ProjectionMatrix);
+    projectionMatrixTransposed[1] = ovrMatrix4f_Transpose(&updatedTracking.Eye[1].ProjectionMatrix);
+
+    // Update the scene matrices.
+    GL(glBindBuffer(GL_UNIFORM_BUFFER, scene->SceneMatrices));
+    ovrMatrix4f* sceneMatrices = (ovrMatrix4f*)GL(glMapBufferRange(GL_UNIFORM_BUFFER,
+                                                                   0,
+                                                                   2 * sizeof(ovrMatrix4f) /* 2 view matrices */ +
+                                                                   2 * sizeof(ovrMatrix4f) /* 2 projection matrices */,
+                                                                   GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT)); // TODO: Why?
+
+    if (sceneMatrices != NULL) {
+        memcpy((char*)sceneMatrices, &eyeViewMatrixTransposed, 2 * sizeof(ovrMatrix4f));
+        memcpy((char*)sceneMatrices + 2 * sizeof(ovrMatrix4f), &projectionMatrixTransposed,2 * sizeof(ovrMatrix4f));
+    }
+
+    GL(glUnmapBuffer(GL_UNIFORM_BUFFER)); // TODO: Why?
+    GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
+
+    ovrLayerProjection2 layer = vrapi_DefaultLayerProjection2();
+    layer.HeadPose = updatedTracking.HeadPose;
+    for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
+        ovrFramebuffer* frameBuffer = &renderer->FrameBuffer[renderer->NumBuffers == 1 ? 0 : eye];
+        layer.Textures[eye].ColorSwapChain = frameBuffer->ColorTextureSwapChain;
+        layer.Textures[eye].SwapChainIndex = frameBuffer->TextureSwapChainIndex;
+        layer.Textures[eye].TexCoordsFromTanAngles = ovrMatrix4f_TanAngleMatrixFromProjection(&updatedTracking.Eye[eye].ProjectionMatrix);
+    }
+    layer.Header.Flags |= VRAPI_FRAME_LAYER_FLAG_CHROMATIC_ABERRATION_CORRECTION;
+
+    // Render the eye images.
+    for (int eye = 0; eye < renderer->NumBuffers; eye++) {
+        // PRE DRAW
+
+        // NOTE: In the non-mv case, latency can be further reduced by updating the sensor
+        // prediction for each eye (updates orientation, not position)
+        ovrFramebuffer* frameBuffer = &renderer->FrameBuffer[eye];
+        ovrFramebuffer_SetCurrent(frameBuffer);
+
+        GL(glUseProgram(scene->Program.Program)); // TODO: Why?
+        GL(glBindBufferBase(
+                GL_UNIFORM_BUFFER,
+                scene->Program.UniformBinding[UNIFORM_SCENE_MATRICES],
+                scene->SceneMatrices)); // TODO: Why?
+        if (scene->Program.UniformLocation[UNIFORM_VIEW_ID] >= 0) // NOTE: will not be present when multiview path is enabled.
+        {
+            GL(glUniform1i(scene->Program.UniformLocation[UNIFORM_VIEW_ID], eye)); // projection?
+        }
+
+        GL(glEnable(GL_SCISSOR_TEST));
+        GL(glDepthMask(GL_TRUE));
+        GL(glEnable(GL_DEPTH_TEST));
+        GL(glDepthFunc(GL_LEQUAL));
+        GL(glEnable(GL_CULL_FACE));
+        GL(glCullFace(GL_BACK));
+        GL(glViewport(0, 0, frameBuffer->Width, frameBuffer->Height));
+        GL(glScissor(0, 0, frameBuffer->Width, frameBuffer->Height));
+        GL(glClearColor(0.125f, 0.0f, 0.125f, 1.0f));
+        GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+        draw(scene->Program.Program, 3, vertices);
+
+        // POST DRAW
+        GL(glUseProgram(0));
+
+        ovrFramebuffer_Resolve(frameBuffer);
+        ovrFramebuffer_Advance(frameBuffer);
+    }
+
+    ovrFramebuffer_SetNone();
+
+    return layer;
+
+}
+
+ovrLayerProjection2 ovrRenderer_RenderFrame1(
     ovrRenderer* renderer,
     const ovrJava* java,
     const ovrScene* scene,
     const ovrSimulation* simulation,
     const ovrTracking2* tracking,
     ovrMobile* ovr) {
-    ovrMatrix4f rotationMatrices[NUM_ROTATIONS];
+    ovrMatrix4f rotationMatrices[NUM_ROTATIONS]; // NUM_ROTATIONS i.e 16 different rotations randomly assigned to objects
     for (int i = 0; i < NUM_ROTATIONS; i++) {
         rotationMatrices[i] = ovrMatrix4f_CreateRotation(
-            scene->Rotations[i].x * simulation->CurrentRotation.x,
+            scene->Rotations[i].x * simulation->CurrentRotation.x, // radians * time
             scene->Rotations[i].y * simulation->CurrentRotation.y,
             scene->Rotations[i].z * simulation->CurrentRotation.z);
     }
@@ -1074,8 +1238,7 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
             GL_UNIFORM_BUFFER,
             scene->Program.UniformBinding[UNIFORM_SCENE_MATRICES],
             scene->SceneMatrices));
-        if (scene->Program.UniformLocation[UNIFORM_VIEW_ID] >=
-            0) // NOTE: will not be present when multiview path is enabled.
+        if (scene->Program.UniformLocation[UNIFORM_VIEW_ID] >= 0) // NOTE: will not be present when multiview path is enabled.
         {
             GL(glUniform1i(scene->Program.UniformLocation[UNIFORM_VIEW_ID], eye));
         }
