@@ -15,7 +15,19 @@
 #include <GLES3/gl3ext.h>
 
 #include "vr.h"
-#include "3d.h"
+#include "ai.h"
+
+#include <game.h>
+#include <gamefont.h>
+#include <bm.h>
+#include <texmerge.h>
+#include <mission.h>
+#include <gameseq.h>
+#include <palette.h>
+#include <timer.h>
+#include <3d.h>
+#include <fcntl.h>
+#include <errno.h>
 
 /**
  * Process the next main command.
@@ -75,10 +87,14 @@ static void app_handle_cmd(struct android_app* app, int32_t cmd) {
 * android_native_app_glue.  It runs in its own thread, with its own
 * event loop for receiving input events and doing other things.
 */
+extern AAssetManager* Asset_manager;
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
     ALOGV("android_app_entry()");
     ALOGV("    android_main()");
+
+
+    Asset_manager = app->activity->assetManager;
 
     ovrJava java;
     java.Vm = app->activity->vm;
@@ -126,6 +142,27 @@ void android_main(struct android_app* app) {
     app->onAppCmd = app_handle_cmd;
 
     const double startTime = GetTimeInSeconds();
+
+    // Game init
+    {
+        const int SCR_WIDTH = 800;
+        const int SCR_HEIGHT = 600; // TODO: remove this buffers
+
+        game_init_render_buffers(SM_800x600V15, SCR_WIDTH, SCR_HEIGHT, 1, 0, 1);
+
+        int t = gr_init(SCR_WIDTH, SCR_HEIGHT);
+
+        gr_use_palette_table((char *) "PALETTE.256");
+        gamefont_init(); // must be loaded aftr pallette
+        bm_init();
+        g3_init();
+        texmerge_init(10);        // 10 cache bitmaps
+        init_game();
+        load_mission(0);
+        StartNewGame(1); // Start on level 1
+        gr_palette_apply(gr_palette);
+        timer_init();
+    }
 
     while (app->destroyRequested == 0) {
         // Read all pending events.
@@ -220,6 +257,15 @@ void android_main(struct android_app* app) {
         // display time.
         ovrSimulation_Advance(&appState.Simulation, predictedDisplayTime - startTime);
 
+        {
+            // update game state
+            calc_frame_time();
+            do_ai_frame_all();
+            //object_move_all(); // TODO" fix object id = 0
+            update_object_seg(ConsoleObject);
+
+        }
+
 #if MULTI_THREADED
         // Render the eye images on a separate thread.
         ovrRenderThread_Submit(
@@ -233,6 +279,8 @@ void android_main(struct android_app* app) {
             &appState.Simulation,
             &tracking);
 #else
+
+
         // Render eye images and setup the primary layer using ovrTracking2.
         const ovrLayerProjection2 worldLayer = ovrRenderer_RenderFrame(
                 &appState.Renderer,

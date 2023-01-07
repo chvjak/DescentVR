@@ -32,8 +32,10 @@ Copyright   :   Copyright (c) Facebook Technologies, LLC and its affiliates. All
 #include "VrApi_Helpers.h"
 #include "VrApi_SystemUtils.h"
 #include "VrApi_Input.h"
-
 #include "vr.h"
+
+#include <render.h>
+
 /*
 ================================================================================
 
@@ -997,20 +999,6 @@ static const struct
                 { 0.f, 0.f, 1.f, 1.f }
         };
 
-void draw(GLuint program_id, int nv, GLfloat* vertices) {
-    GLint vpos_location = glGetAttribLocation(program_id, "vertexPosition");
-    glEnableVertexAttribArray(vpos_location);
-    GL(glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)vertices));
-
-    GLint vcol_location = glGetAttribLocation(program_id, "vertexColor");
-    glEnableVertexAttribArray(vcol_location);
-    GL(glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(colors[0]), (void*)&colors));
-
-    GL(glDrawArrays(GL_TRIANGLE_FAN, 0, nv));
-
-    glDisableVertexAttribArray(vpos_location);
-}
-
 ovrLayerProjection2 ovrRenderer_RenderFrame(
         ovrRenderer* renderer,
         const ovrJava* java,
@@ -1112,18 +1100,19 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
             GL(glUniform1i(scene->Program.UniformLocation[UNIFORM_VIEW_ID], eye)); // projection?
         }
 
-        GL(glEnable(GL_SCISSOR_TEST));
-        GL(glDepthMask(GL_TRUE));
-        GL(glEnable(GL_DEPTH_TEST));
-        GL(glDepthFunc(GL_LEQUAL));
-        GL(glEnable(GL_CULL_FACE));
-        GL(glCullFace(GL_BACK));
+        //GL(glEnable(GL_SCISSOR_TEST));
+        //GL(glDepthMask(GL_TRUE));
+        //GL(glEnable(GL_DEPTH_TEST));
+        //GL(glDepthFunc(GL_LEQUAL));
+        //GL(glEnable(GL_CULL_FACE));
+        //GL(glCullFace(GL_BACK));
         GL(glViewport(0, 0, frameBuffer->Width, frameBuffer->Height));
-        GL(glScissor(0, 0, frameBuffer->Width, frameBuffer->Height));
+        //GL(glScissor(0, 0, frameBuffer->Width, frameBuffer->Height));
         GL(glClearColor(0.125f, 0.0f, 0.125f, 1.0f));
         GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-        draw(scene->Program.Program, 3, vertices);
+        render_frame(0);
+
 
         // POST DRAW
         GL(glUseProgram(0));

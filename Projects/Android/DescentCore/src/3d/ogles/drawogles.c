@@ -95,6 +95,7 @@ int g3_draw_poly_ogles(int nv, g3s_point **pointlist) {
 			  gr_current_pal[grd_curcanv->cv_color * 3 + 2] * 4, alpha);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, nv);
 	glDisableClientState(GL_VERTEX_ARRAY);
+
 	free(vertices);
 	return 0;
 }
@@ -122,6 +123,8 @@ int g3_draw_line_ogles(g3s_point *p0, g3s_point *p1) {
 	return 1;
 }
 
+// this is actually a circle.
+// seems can share opengl code with  g3_draw_poly_ogles()
 int g3_draw_sphere_ogles(g3s_point *pnt, fix rad) {
 	GLfloat x, y, z, rx, ry;
 	GLfloat vertices[60];
@@ -153,10 +156,167 @@ int g3_draw_sphere_ogles(g3s_point *pnt, fix rad) {
 }
 
 
-#else
-int g3_draw_tmap_ogles(int nv, g3s_point **pointlist, g3s_uvl *uvl_list, grs_bitmap *bm) {return 1;}
-int g3_draw_poly_ogles(int nv, g3s_point **pointlist) { return 1;}
-int g3_draw_line_ogles(g3s_point *p0, g3s_point *p1) {return 1;}
+#else // NON OGLES1
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
+
+extern GLint program_with_tex_id;
+
+static const struct
+{
+    float r, g, b, a;
+} colors[3] =
+        {
+                { 1.f, 0.f, 0.f, 1.f },
+                { 0.f, 1.f, 0.f, 1.f },
+                { 0.f, 0.f, 1.f, 1.f }
+        };
+
+void draw(GLuint program_id, int nv, GLfloat* vertices) {
+    GLint vpos_location = glGetAttribLocation(program_id, "vertexPosition");
+    glEnableVertexAttribArray(vpos_location);
+    (glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)vertices));
+
+    GLint vcol_location = glGetAttribLocation(program_id, "vertexColor");
+    glEnableVertexAttribArray(vcol_location);
+    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(colors[0]), (void*)&colors);
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, nv);
+
+    glDisableVertexAttribArray(vpos_location);
+}
+
+void draw_with_texture(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* colors, GLint texture_slot_id) {
+    draw(program_with_tex_id, nv, vertices);
+    return;
+
+    glUseProgram(program_with_tex_id); // TODO: generalize
+    glBindTexture(GL_TEXTURE_2D, texture_slot_id);
+
+    GLint vpos_location = glGetAttribLocation(program_with_tex_id, "vPos");
+    glEnableVertexAttribArray(vpos_location);
+    glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)vertices);
+
+    GLint vtex_coords_location = glGetAttribLocation(program_with_tex_id, "vTexCoords");
+    glEnableVertexAttribArray(vtex_coords_location);
+    glVertexAttribPointer(vtex_coords_location, 2, GL_FLOAT, GL_FALSE, 0, (void*)tex_coords);
+
+    GLint vcolors_location = glGetAttribLocation(program_with_tex_id, "vColors");
+    glEnableVertexAttribArray(vcolors_location);
+    glVertexAttribPointer(vcolors_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)colors);
+
+    // Gets the location of the uniform holding texture sampler
+    GLuint texUni = glGetUniformLocation(program_with_tex_id, "texSampler");
+
+    // Sets the value of the uniform
+    glUniform1i(texUni, 0); // WHY 0?
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, nv);
+
+    glDisableVertexAttribArray(vpos_location);
+    glDisableVertexAttribArray(vtex_coords_location);
+}
+
+bool g3_draw_tmap_ogles(int nv, g3s_point** pointlist, g3s_uvl* uvl_list, grs_bitmap* bm) {
+
+    GLfloat* vertices = (GLfloat*)malloc(sizeof(GLfloat) * 3 * nv);
+    GLfloat* tex_coordinates = (GLfloat*)malloc(sizeof(GLfloat) * 2 * nv);
+    GLfloat* colors = (GLfloat*)malloc(sizeof(GLfloat) * 3 * nv);
+
+    // Build vertex list
+    for (int i = 0; i < nv; ++i) {
+        vertices[i * 3] = f2fl(pointlist[i]->p3_vec.x);
+        vertices[i * 3 + 1] = f2fl(pointlist[i]->p3_vec.y);
+        vertices[i * 3 + 2] = -f2fl(pointlist[i]->p3_vec.z);
+
+        tex_coordinates[i * 2] = f2fl(uvl_list[i].u);
+        tex_coordinates[i * 2 + 1] = f2fl(uvl_list[i].v);
+
+        colors[i * 3 + 2] = colors[i * 3 + 1] = colors[i * 3] = f2fl(uvl_list[i].l);
+    }
+
+    ogles_bm_bind_teximage_2d(bm);
+    draw_with_texture(nv, vertices, tex_coordinates, colors, bm->bm_ogles_tex_id);
+
+    free(vertices);
+    free(tex_coordinates);
+    free(colors);
+
+    return 1;
+}
+
+int g3_draw_poly_ogles(int nv, g3s_point **pointlist) {
+    GLfloat *vertices;
+    GLubyte alpha;
+    int i;
+
+    vertices = malloc(sizeof(GLfloat) * 3 * nv);
+
+    // Build vertex list
+    for (i = 0; i < nv; ++i) {
+        vertices[i * 3] = f2fl(pointlist[i]->p3_vec.x);
+        vertices[i * 3 + 1] = f2fl(pointlist[i]->p3_vec.y);
+        vertices[i * 3 + 2] = -f2fl(pointlist[i]->p3_vec.z);
+    }
+
+    if (Gr_scanline_darkening_level >= GR_FADE_LEVELS ) {
+        alpha = 255;
+    } else {
+        alpha = 255 - ((float)Gr_scanline_darkening_level / (float)GR_FADE_LEVELS) * 255.0f;
+    }
+
+    glDisable(GL_TEXTURE_2D);
+
+    GLuint vertexbuffer;
+    glGenBuffers(1, &vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // 1st attribute buffer : vertices
+    // TODO: investogate color http://www.opengl-tutorial.org/beginners-tutorials/tutorial-4-a-colored-cube/
+    // can bind color buffer of the same number of elems with repeated values (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 0, 0), ...
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glVertexAttribPointer(
+            0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+            nv,                  // size
+            GL_FLOAT,           // type
+            GL_FALSE,           // normalized?
+            0,                  // stride
+            (void*)0            // array buffer offset
+    );
+
+    // Draw
+    glDrawArrays(GL_TRIANGLE_FAN, 0, nv); // Starting from vertex 0; nv vertices total -> 1 triangle
+    glDisableVertexAttribArray(0);
+
+    // TODO: investigate resource cleanup
+
+    free(vertices);
+    return 0;
+}
+
+int g3_draw_line_ogles(g3s_point *p0, g3s_point *p1) {
+    GLfloat x0, y0, z0, x1, y1, z1;
+
+    x0 = f2fl(p0->x);
+    y0 = f2fl(p0->y);
+    z0 = -f2fl(p0->z);
+    x1 = f2fl(p1->x);
+    y1 = f2fl(p1->y);
+    z1 = -f2fl(p1->z);
+
+    GLfloat vertices[] = { x0, y0, z0, x1, y1, z1 };
+
+    glDisable(GL_TEXTURE_2D);
+    // TODO: https://stackoverflow.com/questions/14486291/how-to-draw-line-in-opengl
+    glDrawArrays(GL_LINES, 0, 2);
+
+    return 1;
+}
+
 int g3_draw_sphere_ogles(g3s_point *pnt, fix rad) {return 1;}
 
 #endif
