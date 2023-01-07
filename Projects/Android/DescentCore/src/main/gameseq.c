@@ -969,7 +969,8 @@ void LoadLevel(int level_num)
 
 	set_sound_sources();
 
-	songs_play_level_song( Current_level_num );
+	// TODO: Enable when sound is fixed
+//	songs_play_level_song( Current_level_num );
 
 }
 

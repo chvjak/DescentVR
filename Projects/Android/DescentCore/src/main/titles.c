@@ -215,7 +215,7 @@ char Briefing_text_filename[13] = "briefing.tex";
 #define	SHAREWARE_ENDING_FILENAME	"ending.tex"
 
 //	Can be set by -noscreens command line option.  Causes bypassing of all briefing screens.
-int	Skip_briefing_screens=0;
+int	Skip_briefing_screens=1;
 int	Briefing_foreground_colors[MAX_BRIEFING_COLORS], Briefing_background_colors[MAX_BRIEFING_COLORS];
 int	Current_color = 0;
 int	Erase_color;

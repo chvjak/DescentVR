@@ -185,7 +185,7 @@ FILE * cfile_get_filehandle( char * filename, char * mode )
 
 	descent_critical_error = 0;
 #ifdef ANDROID_NDK
-	AAsset* asset = AAssetManager_open(Asset_manager, filename, AASSET_MODE_RANDOM);
+	AAsset* asset =  AAssetManager_open(Asset_manager, filename, AASSET_MODE_RANDOM);
 	if (!asset) {
 		fp = NULL;
 	} else {
@@ -258,7 +258,6 @@ FILE * cfile_find_libfile(char * name, int * length)
 {
 	FILE * fp;
 	int i;
-
 	if ( AltHogfile_initialized )	{
 		for (i=0; i<AltNum_hogfiles; i++ )	{
 			if ( !strcasecmp( AltHogFiles[i].name, name ))	{
@@ -270,15 +269,14 @@ FILE * cfile_find_libfile(char * name, int * length)
 			}
 		}
 	}
-
 	if ( !Hogfile_initialized ) 	{
-		cfile_init_hogfile( "DESCENT.HOG", HogFiles, &Num_hogfiles );
+		cfile_init_hogfile( "descent.hog", HogFiles, &Num_hogfiles );
 		Hogfile_initialized = 1;
 	}
-
 	for (i=0; i<Num_hogfiles; i++ )	{
 		if ( !strcasecmp( HogFiles[i].name, name ))	{
-			fp = cfile_get_filehandle( "DESCENT.HOG", "rb" );
+
+            fp = cfile_get_filehandle( "descent.hog", "rb" );
 			if ( fp == NULL ) return NULL;
 			fseek( fp,  HogFiles[i].offset, SEEK_SET );
 			*length = HogFiles[i].length;
@@ -330,7 +328,6 @@ CFILE * cfopen(char * filename, char * mode )
 		printf( "CFILES CAN ONLY BE OPENED WITH RB\n" );
 		exit(1);
 	}
-
 	fp = cfile_get_filehandle( filename, mode );		// Check for non-hog file first...
 	if ( !fp ) {
 		fp = cfile_find_libfile(filename, &length );

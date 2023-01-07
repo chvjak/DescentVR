@@ -2068,7 +2068,8 @@ void render_mine(int start_seg_num, fix eye_offset)
 						}
 						else
 #endif
-							do_render_object(ObjNumber);	// note link to above else
+							// TODO: Uncomment when proble with object_id=0 fixed
+							// do_render_object(ObjNumber);	// note link to above else
 
 						objnp++;
 					}

@@ -2355,7 +2355,9 @@ bkg bg = {0,0,0,0,NULL};
 
 //show a message in a nice little box
 void show_boxed_message(char *msg)
-{	
+{
+	return; // TODO: remove
+
 	int w,h,aw;
 	int x,y;
 
