@@ -189,13 +189,10 @@ void draw(GLuint program_id, int nv, GLfloat* vertices) {
 }
 
 void draw_with_texture(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* colors, GLint texture_slot_id) {
-    draw(program_with_tex_id, nv, vertices);
-    return;
-
-    glUseProgram(program_with_tex_id); // TODO: generalize
+    //glUseProgram(program_with_tex_id); // TODO: generalize
     glBindTexture(GL_TEXTURE_2D, texture_slot_id);
 
-    GLint vpos_location = glGetAttribLocation(program_with_tex_id, "vPos");
+    GLint vpos_location = glGetAttribLocation(program_with_tex_id, "vertexPosition");
     glEnableVertexAttribArray(vpos_location);
     glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)vertices);
 
@@ -203,7 +200,7 @@ void draw_with_texture(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* 
     glEnableVertexAttribArray(vtex_coords_location);
     glVertexAttribPointer(vtex_coords_location, 2, GL_FLOAT, GL_FALSE, 0, (void*)tex_coords);
 
-    GLint vcolors_location = glGetAttribLocation(program_with_tex_id, "vColors");
+    GLint vcolors_location = glGetAttribLocation(program_with_tex_id, "vertexColor");
     glEnableVertexAttribArray(vcolors_location);
     glVertexAttribPointer(vcolors_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)colors);
 
