@@ -308,7 +308,7 @@ uniform sampler2D texSampler;\n\
 out lowp vec4 outColor;\n\
 void main()\n\
 {\n\
-     outColor = texture(texSampler, aTexCoords) + vec4(aColors, 1.f);\n\
+     outColor = mix(texture(texSampler, aTexCoords), vec4(aColors, 1.f), 0.2f);\n\
 }";
 
 /*

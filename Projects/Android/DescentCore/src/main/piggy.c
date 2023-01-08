@@ -363,6 +363,7 @@ static char rcsid[] = "$Id: piggy.c 2.10 1995/10/07 13:17:26 john Exp $";
 //The above include is part of a commercial 
 //sound library, so it cannot be included in a public 
 //release of the source code. -KRB
+
 #include "no_sos.h" //Added by KRB
 
 #include "piggy.h"
@@ -645,7 +646,7 @@ int piggy_init()
 		GameBitmapOffset[0] = 0;
 	}
 
-	filename = "DESCENT.PIG";
+	filename = "descent.pig";
 	
 	if ( FindArg( "-bigpig" ))
 		BigPig = 1;
