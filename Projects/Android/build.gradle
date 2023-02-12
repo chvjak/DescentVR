@@ -17,9 +17,9 @@ android {
     // be unique on a system.  If you don't change it, a new app
     // will replace an older one.
     applicationId "com.chvjak." + project.archivesBaseName
-    minSdkVersion 29
-    targetSdkVersion 33
-    compileSdkVersion 29
+    minSdkVersion 24
+    targetSdkVersion 25
+    compileSdkVersion 26
 
     // override app plugin abiFilters for 64-bit support
     externalNativeBuild {
@@ -29,6 +29,17 @@ android {
       ndkBuild {
         abiFilters 'arm64-v8a'
       }
+    }
+  }
+
+  buildTypes{
+    release{
+      minifyEnabled true
+    }
+    debug{
+      jniDebuggable true
+      debuggable true
+      minifyEnabled false
     }
   }
 
