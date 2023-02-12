@@ -230,77 +230,40 @@ static bool ovrProgram_Create(
 
 void ovrProgram_Destroy(ovrProgram* program);
 
-static const char VERTEX_SHADER1[] =
-        "#ifndef DISABLE_MULTIVIEW\n"
-        "	#define DISABLE_MULTIVIEW 0\n"
-        "#endif\n"
-        "#define NUM_VIEWS 2\n"
-        "#if defined( GL_OVR_multiview2 ) && ! DISABLE_MULTIVIEW\n"
-        "	#extension GL_OVR_multiview2 : enable\n"
-        "	layout(num_views=NUM_VIEWS) in;\n"
-        "	#define VIEW_ID gl_ViewID_OVR\n"
-        "#else\n"
-        "	uniform lowp int ViewID;\n"
-        "	#define VIEW_ID ViewID\n"
-        "#endif\n"
-        "in vec3 vertexPosition;\n"
-        "in vec4 vertexColor;\n"
-        "in mat4 vertexTransform;\n"
-        "uniform SceneMatrices\n"
-        "{\n"
-        "	uniform mat4 ViewMatrix[NUM_VIEWS];\n"
-        "	uniform mat4 ProjectionMatrix[NUM_VIEWS];\n"
-        "} sm;\n"
-        "out vec4 fragmentColor;\n"
-        "void main()\n"
-        "{\n"
-        "	gl_Position = sm.ProjectionMatrix[VIEW_ID] * ( sm.ViewMatrix[VIEW_ID] * ( vec4( vertexPosition * 0.1, 1.0 ) ) );\n"
-        "	fragmentColor = vertexColor;\n"
-        "}\n";
-
-static const char FRAGMENT_SHADER1[] =
-        "in lowp vec4 fragmentColor;\n"
-        "out lowp vec4 outColor;\n"
-        "void main()\n"
-        "{\n"
-        "	outColor = fragmentColor;\n"
-        "}\n";
-
-
 static const char VERTEX_SHADER[] =
-        "#ifndef DISABLE_MULTIVIEW\n"
-        "	#define DISABLE_MULTIVIEW 0\n"
-        "#endif\n"
-        "#define NUM_VIEWS 2\n"
-        "#if defined( GL_OVR_multiview2 ) && ! DISABLE_MULTIVIEW\n"
-        "	#extension GL_OVR_multiview2 : enable\n"
-        "	layout(num_views=NUM_VIEWS) in;\n"
-        "	#define VIEW_ID gl_ViewID_OVR\n"
-        "#else\n"
-        "	uniform lowp int ViewID;\n"
-        "	#define VIEW_ID ViewID\n"
-        "#endif\n"
-        "in vec3 vertexPosition;\n"
-        "in vec3 vertexColor;\n"
-        "in vec2 vTexCoords;\n"
-        "in mat4 vertexTransform;\n"
-        "uniform SceneMatrices\n"
-        "{\n"
-        "	uniform mat4 ViewMatrix[NUM_VIEWS];\n"
-        "	uniform mat4 ProjectionMatrix[NUM_VIEWS];\n"
-        "} sm;\n"
-        "out vec2 aTexCoords;\n"
-        "out vec3 aColors;\n"
-
-        "void main()\n"
-        "{\n"
-        "	gl_Position = sm.ProjectionMatrix[VIEW_ID] * ( sm.ViewMatrix[VIEW_ID] * ( vec4( vertexPosition * 0.1, 1.0 ) ) );\n"
-        "	aTexCoords = vTexCoords;\n"
-        "	aColors = vertexColor;\n"
-        "}\n";
+"#ifndef DISABLE_MULTIVIEW\n\
+#define DISABLE_MULTIVIEW 0\n\
+#endif\n\
+#define NUM_VIEWS 2\n\
+#if defined( GL_OVR_multiview2 ) && ! DISABLE_MULTIVIEW\n\
+	#extension GL_OVR_multiview2 : enable\n\
+	layout(num_views=NUM_VIEWS) in;\n\
+	#define VIEW_ID gl_ViewID_OVR\n\
+#else\n\
+	uniform lowp int ViewID;\n\
+	#define VIEW_ID ViewID\n\
+#endif\n\
+in vec3 vertexPosition;\n\
+in vec3 vertexColor;\n\
+in vec2 vTexCoords;\n\
+in mat4 vertexTransform;\n\
+uniform SceneMatrices\n\
+{\n\
+	uniform mat4 ViewMatrix[NUM_VIEWS];\n\
+	uniform mat4 ProjectionMatrix[NUM_VIEWS];\n\
+} sm;\n\
+out vec2 aTexCoords;\n\
+out vec3 aColors;\n\
+ \n\
+void main()\n\
+{\n\
+	gl_Position = sm.ProjectionMatrix[VIEW_ID] * ( sm.ViewMatrix[VIEW_ID] * ( vec4( vertexPosition * 0.1, 1.0 ) ) );\n\
+	aTexCoords = vTexCoords;\n\
+	aColors = vertexColor;\n\
+}\n";
 
 static const char FRAGMENT_SHADER[] =
-        "in vec2 aTexCoords;\n\
+"in vec2 aTexCoords;\n\
 in vec3 aColors;\n\
 \n\
 uniform sampler2D texSampler;\n\
@@ -308,8 +271,9 @@ uniform sampler2D texSampler;\n\
 out lowp vec4 outColor;\n\
 void main()\n\
 {\n\
-     outColor = mix(texture(texSampler, aTexCoords), vec4(aColors, 1.f), 0.2f);\n\
+     outColor = mix(texture(texSampler, aTexCoords), vec4(aColors, 1.f), 0.5f);\n\
 }";
+
 
 /*
 ================================================================================
@@ -757,6 +721,7 @@ typedef struct {
     int GpuLevel;
     int MainThreadTid;
     int RenderThreadTid;
+    bool GamePadBackButtonDown;
 #if MULTI_THREADED
     ovrRenderThread RenderThread;
 #else
@@ -772,5 +737,8 @@ void ovrApp_HandleVrModeChanges(ovrApp* app) ;
 void ovrApp_HandleInput(ovrApp* app) ;
 
 void ovrApp_HandleVrApiEvents(ovrApp* app);
+
+extern ovrVector3f shipPosition;
+extern bool fire_secondary;
 
 #endif

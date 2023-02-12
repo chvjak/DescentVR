@@ -16,6 +16,12 @@
 
 #include "vr.h"
 #include "ai.h"
+#include "effects.h"
+#include "laser.h"
+#include "text.h"
+#include "menu.h"
+#include "switch.h"
+#include "wall.h"
 
 #include <game.h>
 #include <gamefont.h>
@@ -154,14 +160,23 @@ void android_main(struct android_app* app) {
 
         gr_use_palette_table((char *) "PALETTE.256");
         gamefont_init(); // must be loaded aftr pallette
+        load_text();
         bm_init();
         g3_init();
-        texmerge_init(10);        // 10 cache bitmaps
+        texmerge_init(100);        // 10 cache bitmaps
+
         init_game();
+        set_detail_level_parameters(NUM_DETAIL_LEVELS - 2); // #define	NUM_DETAIL_LEVELS	6 , //	Note: Highest detail level (detail_level == NUM_DETAIL_LEVELS-1) is custom detail level.
         load_mission(0);
         StartNewGame(1); // Start on level 1
         gr_palette_apply(gr_palette);
+
         timer_init();
+        reset_time();
+        FrameTime = 0;			//make first frame zero
+
+        Players[Player_num].flags |= PLAYER_FLAGS_INVULNERABLE;
+
     }
 
     while (app->destroyRequested == 0) {
@@ -246,10 +261,8 @@ void android_main(struct android_app* app) {
         // the new eye images will be displayed. The number of frames predicted ahead
         // depends on the pipeline depth of the engine and the synthesis rate.
         // The better the prediction, the less black will be pulled in at the edges.
-        const double predictedDisplayTime =
-                vrapi_GetPredictedDisplayTime(appState.Ovr, appState.FrameIndex);
-        const ovrTracking2 tracking =
-                vrapi_GetPredictedTracking2(appState.Ovr, predictedDisplayTime);
+        const double predictedDisplayTime = vrapi_GetPredictedDisplayTime(appState.Ovr, appState.FrameIndex);
+        const ovrTracking2 tracking = vrapi_GetPredictedTracking2(appState.Ovr, predictedDisplayTime);
 
         appState.DisplayTime = predictedDisplayTime;
 
@@ -261,9 +274,54 @@ void android_main(struct android_app* app) {
             // update game state
             calc_frame_time();
             do_ai_frame_all();
-            //object_move_all(); // TODO" fix object id = 0
+            object_move_all();
+            do_special_effects();
+            wall_frame_process();
+            triggers_frame_process();
             update_object_seg(ConsoleObject);
 
+            /*
+             /// Tracking state at a given absolute time.
+typedef struct ovrTracking2_ {
+    /// Sensor status described by ovrTrackingStatus flags.
+    unsigned int Status;
+
+    OVR_VRAPI_PADDING(4)
+
+    /// Predicted head configuration at the requested absolute time.
+    /// The pose describes the head orientation and center eye position.
+    ovrRigidBodyPosef HeadPose;
+    struct {
+        ovrMatrix4f ProjectionMatrix;
+        ovrMatrix4f ViewMatrix;
+    } Eye[VRAPI_EYE_COUNT];
+} ovrTracking2;
+             */
+
+
+            // tracking variable contains orientation and position in ViewMatrix
+            // we should also have shipPosition variable wich is updated via controls
+
+            // TODO: switch to c++ otherwise can't use op() overloads
+            // TODO: add pos offset from tracking
+            ConsoleObject->pos = (vms_vector) {fl2f(shipPosition.x), fl2f(shipPosition.y), fl2f(-shipPosition.z)};
+
+            ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
+
+            ovrVector3f forward = { mat.M[0][2], mat.M[1][2], mat.M[2][2] };
+            ovrVector3f right = { mat.M[0][0], mat.M[1][0], mat.M[2][0] };
+            ovrVector3f up = { mat.M[0][1], mat.M[1][1], mat.M[2][1] };
+
+            // Behaves weirdly
+            //ConsoleObject->orient.fvec = (vms_vector){ fl2f(forward.x), fl2f(forward.y), fl2f(forward.z), };
+            //ConsoleObject->orient.uvec = (vms_vector){ fl2f(up.x), fl2f(up.y), fl2f(up.z), };
+            //ConsoleObject->orient.rvec = (vms_vector){ fl2f(right.x), fl2f(right.y), fl2f(right.z), };
+
+            if (fire_secondary)
+            {
+                do_missile_firing();
+                fire_secondary = false;
+            }
         }
 
 #if MULTI_THREADED
@@ -279,7 +337,6 @@ void android_main(struct android_app* app) {
             &appState.Simulation,
             &tracking);
 #else
-
 
         // Render eye images and setup the primary layer using ovrTracking2.
         const ovrLayerProjection2 worldLayer = ovrRenderer_RenderFrame(

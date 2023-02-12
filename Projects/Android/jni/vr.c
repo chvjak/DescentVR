@@ -1127,140 +1127,6 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
 
 }
 
-ovrLayerProjection2 ovrRenderer_RenderFrame1(
-    ovrRenderer* renderer,
-    const ovrJava* java,
-    const ovrScene* scene,
-    const ovrSimulation* simulation,
-    const ovrTracking2* tracking,
-    ovrMobile* ovr) {
-    ovrMatrix4f rotationMatrices[NUM_ROTATIONS]; // NUM_ROTATIONS i.e 16 different rotations randomly assigned to objects
-    for (int i = 0; i < NUM_ROTATIONS; i++) {
-        rotationMatrices[i] = ovrMatrix4f_CreateRotation(
-            scene->Rotations[i].x * simulation->CurrentRotation.x, // radians * time
-            scene->Rotations[i].y * simulation->CurrentRotation.y,
-            scene->Rotations[i].z * simulation->CurrentRotation.z);
-    }
-
-    // Update the instance transform attributes.
-    GL(glBindBuffer(GL_ARRAY_BUFFER, scene->InstanceTransformBuffer));
-    ovrMatrix4f* cubeTransforms = (ovrMatrix4f*)GL(glMapBufferRange(
-                                                                            GL_ARRAY_BUFFER,
-                                                                            0,
-                                                                            NUM_INSTANCES * sizeof(ovrMatrix4f),
-                                                                            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
-    for (int i = 0; i < NUM_INSTANCES; i++) {
-        const int index = scene->CubeRotations[i];
-
-        // Write in order in case the mapped buffer lives on write-combined memory.
-        cubeTransforms[i].M[0][0] = rotationMatrices[index].M[0][0];
-        cubeTransforms[i].M[0][1] = rotationMatrices[index].M[0][1];
-        cubeTransforms[i].M[0][2] = rotationMatrices[index].M[0][2];
-        cubeTransforms[i].M[0][3] = rotationMatrices[index].M[0][3];
-
-        cubeTransforms[i].M[1][0] = rotationMatrices[index].M[1][0];
-        cubeTransforms[i].M[1][1] = rotationMatrices[index].M[1][1];
-        cubeTransforms[i].M[1][2] = rotationMatrices[index].M[1][2];
-        cubeTransforms[i].M[1][3] = rotationMatrices[index].M[1][3];
-
-        cubeTransforms[i].M[2][0] = rotationMatrices[index].M[2][0];
-        cubeTransforms[i].M[2][1] = rotationMatrices[index].M[2][1];
-        cubeTransforms[i].M[2][2] = rotationMatrices[index].M[2][2];
-        cubeTransforms[i].M[2][3] = rotationMatrices[index].M[2][3];
-
-        cubeTransforms[i].M[3][0] = scene->CubePositions[i].x;
-        cubeTransforms[i].M[3][1] = scene->CubePositions[i].y;
-        cubeTransforms[i].M[3][2] = scene->CubePositions[i].z;
-        cubeTransforms[i].M[3][3] = 1.0f;
-    }
-    GL(glUnmapBuffer(GL_ARRAY_BUFFER));
-    GL(glBindBuffer(GL_ARRAY_BUFFER, 0));
-
-    ovrTracking2 updatedTracking = *tracking;
-
-    ovrMatrix4f eyeViewMatrixTransposed[2];
-    eyeViewMatrixTransposed[0] = ovrMatrix4f_Transpose(&updatedTracking.Eye[0].ViewMatrix);
-    eyeViewMatrixTransposed[1] = ovrMatrix4f_Transpose(&updatedTracking.Eye[1].ViewMatrix);
-
-    ovrMatrix4f projectionMatrixTransposed[2];
-    projectionMatrixTransposed[0] = ovrMatrix4f_Transpose(&updatedTracking.Eye[0].ProjectionMatrix);
-    projectionMatrixTransposed[1] = ovrMatrix4f_Transpose(&updatedTracking.Eye[1].ProjectionMatrix);
-
-    // Update the scene matrices.
-    GL(glBindBuffer(GL_UNIFORM_BUFFER, scene->SceneMatrices));
-    ovrMatrix4f* sceneMatrices = (ovrMatrix4f*)GL(glMapBufferRange(GL_UNIFORM_BUFFER,
-                                                                       0,
-                                                                       2 * sizeof(ovrMatrix4f) /* 2 view matrices */ +
-                                                                           2 * sizeof(ovrMatrix4f) /* 2 projection matrices */,
-                                                                       GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
-
-    if (sceneMatrices != NULL) {
-        memcpy((char*)sceneMatrices, &eyeViewMatrixTransposed, 2 * sizeof(ovrMatrix4f));
-        memcpy((char*)sceneMatrices + 2 * sizeof(ovrMatrix4f), &projectionMatrixTransposed,2 * sizeof(ovrMatrix4f));
-    }
-
-    GL(glUnmapBuffer(GL_UNIFORM_BUFFER));
-    GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
-
-    ovrLayerProjection2 layer = vrapi_DefaultLayerProjection2();
-    layer.HeadPose = updatedTracking.HeadPose;
-    for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
-        ovrFramebuffer* frameBuffer = &renderer->FrameBuffer[renderer->NumBuffers == 1 ? 0 : eye];
-        layer.Textures[eye].ColorSwapChain = frameBuffer->ColorTextureSwapChain;
-        layer.Textures[eye].SwapChainIndex = frameBuffer->TextureSwapChainIndex;
-        layer.Textures[eye].TexCoordsFromTanAngles = ovrMatrix4f_TanAngleMatrixFromProjection(&updatedTracking.Eye[eye].ProjectionMatrix);
-    }
-    layer.Header.Flags |= VRAPI_FRAME_LAYER_FLAG_CHROMATIC_ABERRATION_CORRECTION;
-
-    // Render the eye images.
-    for (int eye = 0; eye < renderer->NumBuffers; eye++) {
-
-        // PRE DRAW
-
-        // NOTE: In the non-mv case, latency can be further reduced by updating the sensor
-        // prediction for each eye (updates orientation, not position)
-        ovrFramebuffer* frameBuffer = &renderer->FrameBuffer[eye];
-        ovrFramebuffer_SetCurrent(frameBuffer);
-
-        GL(glUseProgram(scene->Program.Program));
-        GL(glBindBufferBase(
-            GL_UNIFORM_BUFFER,
-            scene->Program.UniformBinding[UNIFORM_SCENE_MATRICES],
-            scene->SceneMatrices));
-        if (scene->Program.UniformLocation[UNIFORM_VIEW_ID] >= 0) // NOTE: will not be present when multiview path is enabled.
-        {
-            GL(glUniform1i(scene->Program.UniformLocation[UNIFORM_VIEW_ID], eye));
-        }
-
-        // DRAW
-
-        GL(glEnable(GL_SCISSOR_TEST));
-        GL(glDepthMask(GL_TRUE));
-        GL(glEnable(GL_DEPTH_TEST));
-        GL(glDepthFunc(GL_LEQUAL));
-        GL(glEnable(GL_CULL_FACE));
-        GL(glCullFace(GL_BACK));
-        GL(glViewport(0, 0, frameBuffer->Width, frameBuffer->Height));
-        GL(glScissor(0, 0, frameBuffer->Width, frameBuffer->Height));
-        GL(glClearColor(0.125f, 0.0f, 0.125f, 1.0f));
-        GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-        GL(glBindVertexArray(scene->Cube.VertexArrayObject));
-        GL(glDrawElementsInstanced(
-            GL_TRIANGLES, scene->Cube.IndexCount, GL_UNSIGNED_SHORT, NULL, NUM_INSTANCES));
-        GL(glBindVertexArray(0));
-        GL(glUseProgram(0));
-
-        // POST DRAW
-
-        ovrFramebuffer_Resolve(frameBuffer);
-        ovrFramebuffer_Advance(frameBuffer);
-    }
-
-    ovrFramebuffer_SetNone();
-
-    return layer;
-}
-
 /*
 ================================================================================
 
@@ -1357,7 +1223,157 @@ void ovrApp_HandleVrModeChanges(ovrApp* app) {
     }
 }
 
-void ovrApp_HandleInput(ovrApp* app) {}
+ovrInputStateTrackedRemote rightTrackedRemoteState_old;
+ovrInputStateTrackedRemote rightTrackedRemoteState_new;
+
+ovrInputStateTrackedRemote leftTrackedRemoteState_old;
+ovrInputStateTrackedRemote leftTrackedRemoteState_new;
+
+ovrVector3f vecmul(ovrVector3f f, double speed);
+
+ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1);
+
+ovrVector3f shipPosition = {0, 0, 0};
+
+bool fire_secondary = false;
+
+void ovrApp_HandleInput(ovrApp * app )
+{
+    for ( int i = 0; ; i++ ) {
+        ovrInputCapabilityHeader cap;
+        ovrResult result = vrapi_EnumerateInputDevices(app->Ovr, i, &cap);
+        if (result < 0) {
+            break;
+        }
+
+        if (cap.Type == ovrControllerType_TrackedRemote) {
+            ovrTracking remoteTracking;
+            ovrInputStateTrackedRemote trackedRemoteState;
+            trackedRemoteState.Header.ControllerType = ovrControllerType_TrackedRemote;
+            result = vrapi_GetCurrentInputState(app->Ovr, cap.DeviceID, &trackedRemoteState.Header);
+
+            if (result == ovrSuccess) {
+                ovrInputTrackedRemoteCapabilities remoteCapabilities;
+                remoteCapabilities.Header = cap;
+                result = vrapi_GetInputDeviceCapabilities(app->Ovr, &remoteCapabilities.Header);
+
+                result = vrapi_GetInputTrackingState(app->Ovr, cap.DeviceID, app->DisplayTime,&remoteTracking);
+
+                if (remoteCapabilities.ControllerCapabilities & ovrControllerCaps_RightHand) {
+                    rightTrackedRemoteState_new = trackedRemoteState;
+                } else{
+                    leftTrackedRemoteState_new = trackedRemoteState;
+                }
+            }
+        }
+    }
+
+    ovrInputStateTrackedRemote *dominantTrackedRemoteState = &rightTrackedRemoteState_new ;
+    ovrInputStateTrackedRemote *dominantTrackedRemoteStateOld = &rightTrackedRemoteState_old;
+    ovrInputStateTrackedRemote *offHandTrackedRemoteState = &leftTrackedRemoteState_new;
+    ovrInputStateTrackedRemote *offHandTrackedRemoteStateOld = &leftTrackedRemoteState_old;
+
+    //Right-hand specific stuff
+    {
+
+            int rightJoyState = (rightTrackedRemoteState_new.Joystick.x > 0.7f ? 1 : 0);
+            if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x > 0.7f ? 1 : 0)) {
+                // pitch up
+                ALOGV("pitch up");
+            }
+            rightJoyState = (rightTrackedRemoteState_new.Joystick.x < -0.7f ? 1 : 0);
+            if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x < -0.7f ? 1 : 0)) {
+                // pitch down
+                ALOGV("pitch down");
+
+            }
+            rightJoyState = (rightTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
+            if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
+                // yaw left
+                ALOGV("yaw left");
+            }
+            rightJoyState = (rightTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
+            if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
+                // yaw right
+                ALOGV("yaw right");
+            }
+
+    }
+
+        //Left-hand specific stuff
+    {
+
+        int leftJoyState = (leftTrackedRemoteState_new.Joystick.x > 0.7f ? 1 : 0);
+        if (leftJoyState != (leftTrackedRemoteState_old.Joystick.x > 0.7f ? 1 : 0)) {
+            // roll left
+            ALOGV("roll left");
+        }
+
+        leftJoyState = (leftTrackedRemoteState_new.Joystick.x < -0.7f ? 1 : 0);
+        if (leftJoyState != (leftTrackedRemoteState_old.Joystick.x < -0.7f ? 1 : 0)) {
+            // roll right
+            ALOGV("roll right");
+        }
+        leftJoyState = (leftTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
+
+        const double predictedDisplayTime = vrapi_GetPredictedDisplayTime(app->Ovr, app->FrameIndex);
+        const ovrTracking2 tracking = vrapi_GetPredictedTracking2(app->Ovr, predictedDisplayTime);
+
+        ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
+
+        ovrVector3f shipOrientation = { mat.M[0][2], mat.M[1][2], mat.M[2][2] };
+        ovrVector3f right = { mat.M[0][0], mat.M[1][0], mat.M[2][0] };
+        ovrVector3f up = { mat.M[0][1], mat.M[1][1], mat.M[2][1] };
+
+        double speed = 0.1;
+        if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
+            // move forward
+            ALOGV("move forward");
+            shipPosition = vecadd(shipPosition, vecmul(shipOrientation, speed));
+
+            ALOGV("shippos(%d, %d, %d)", shipPosition.x, shipPosition.y, shipPosition.z);
+        }
+        leftJoyState = (leftTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
+        if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
+            // move backward
+            ALOGV("move backward");
+            
+            shipPosition = vecadd(shipPosition, vecmul(shipOrientation, -speed));
+
+            ALOGV("shippos(%d, %d, %d)", shipPosition.x, shipPosition.y, shipPosition.z);
+        }
+    }
+
+    // fire
+    if((dominantTrackedRemoteState->Buttons & ovrButton_Trigger))
+    {
+        ALOGV("fire primary");
+
+    }
+
+    if((offHandTrackedRemoteState->Buttons & ovrButton_Trigger))
+    {
+        ALOGV("fire secondary");
+        fire_secondary = true;
+
+    }
+
+
+
+    // swap old / new
+    // why?
+    // ..
+
+}
+
+ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1) {
+    return (ovrVector3f){f.x + f1.x, f.y + f1.y, f.z + f1.z};
+}
+
+ovrVector3f vecmul(ovrVector3f f, double speed) {
+    return (ovrVector3f){f.x * speed, f.y* speed, f.z * speed};
+}
+
 
 void ovrApp_HandleVrApiEvents(ovrApp* app) {
     ovrEventDataBuffer eventDataBuffer = {};
