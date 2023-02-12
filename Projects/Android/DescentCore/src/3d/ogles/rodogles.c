@@ -7,6 +7,7 @@
 //
 #include "rodogles.h"
 #include "oglestex.h"
+#include "globvars.h"
 
 #ifdef OGLES1
 
@@ -40,5 +41,32 @@ bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm)
 	return 0;
 }
 #else
-bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm) { return 0;}
+void draw_with_texture(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* colors, GLint texture_slot_id);
+bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm) {
+    g3s_point pnt;
+    fix w, h;
+
+    w = fixmul(width, Matrix_scale.x) * 2;
+    h = fixmul(height, Matrix_scale.y) * 2;
+
+    GLfloat x0f, y0f, x1f, y1f, zf;
+
+    // Calculate OGLES coords
+    x0f = f2fl(pos->x - w / 2);
+    y0f = f2fl(pos->y - h / 2);
+    x1f = f2fl(pos->x + w / 2);
+    y1f = f2fl(pos->y + h / 2);
+    zf = -f2fl(pos->z);
+
+    // Draw
+    GLfloat vertices[] = { x1f, y0f, zf, x0f, y0f, zf, x0f, y1f, zf, x1f, y1f, zf };
+    GLfloat texCoords[] = { 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f };
+    GLfloat colors[] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, };
+
+    ogles_bm_bind_teximage_2d(bm);
+    draw_with_texture(4, vertices, texCoords, colors, bm->bm_ogles_tex_id);
+
+    return 0;
+
+}
 #endif
