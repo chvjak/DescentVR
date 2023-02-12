@@ -72,6 +72,7 @@ static char rcsid[] = "$Id: mono.c 1.12 1995/02/23 11:59:57 john Exp $";
 #include <string.h>
 
 #include "key.h"
+#include "vr.h"
 
 void mono_int_3();
 #pragma aux mono_int_3 = "int 3";
@@ -247,10 +248,14 @@ void _mprintf( short n, char * format, ... )
 	char *ptr=temp_m_buffer;
 	va_list args;
 
-	if (!OPEN) return;
+	// if (!OPEN) return;  // TODO: remove
 
 	va_start(args, format );
 	vsprintf(temp_m_buffer,format,args);
+
+	ALOGV(format,args);
+	return ; // TODO: remove
+
 	while( *ptr )
 		mputc( n, *ptr++ );
 
@@ -271,6 +276,10 @@ void _mprintf_at( short n, short row, short col, char * format, ... )
 
 	va_start(args, format );
 	vsprintf(buffer,format,args);
+
+	ALOGV(format,args);
+	return ; // TODO: remove
+
 	while( *ptr )
 		mputc( n, *ptr++ );
 

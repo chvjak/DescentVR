@@ -104,7 +104,11 @@ void mrefresh(short n);
 #define mDumpD(window, int_var) 
 #define mDumpX(window, int_var) 
 #define mclear( n )
-#define mprintf(args) 
+
+extern void _mprintf( int n, char * format, ... );
+#define mprintf(args) _mprintf args
+//#define mprintf(args)
+
 #define mprintf_at(args)
 #define mputc( n, c )
 #define mputc_at( n, row, col, c )
