@@ -1102,7 +1102,7 @@ com_check_message(char *checkbuf, int len)
 	return 0; 
 
 error:
-	mprintf((1,"Line status: %d.\n", GetLineStatus(com_port)));
+	//mprintf((1,"Line status: %d.\n", GetLineStatus(com_port)));
 	//ClearLineStatus(com_port);
 	return -1;
 }

@@ -245,6 +245,7 @@ bool g3_draw_tmap_ogles(int nv, g3s_point** pointlist, g3s_uvl* uvl_list, grs_bi
 }
 
 int g3_draw_poly_ogles(int nv, g3s_point **pointlist) {
+    return 1;
     GLfloat *vertices;
     GLubyte alpha;
     int i;
@@ -296,6 +297,8 @@ int g3_draw_poly_ogles(int nv, g3s_point **pointlist) {
 }
 
 int g3_draw_line_ogles(g3s_point *p0, g3s_point *p1) {
+    return 1;
+
     GLfloat x0, y0, z0, x1, y1, z1;
 
     x0 = f2fl(p0->x);
