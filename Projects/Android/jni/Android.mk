@@ -34,7 +34,7 @@ LOCAL_SRC_FILES := main.c \
 
 LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl  -lGLESv3
 
-LOCAL_LDFLAGS := -u ANativeActivity_onCreate
+LOCAL_LDFLAGS := -u ANativeActivity_onCreate -fuse-ld=bfd
 
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
 LOCAL_SHARED_LIBRARIES := vrapi
