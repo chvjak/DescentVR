@@ -1325,7 +1325,7 @@ void ovrApp_HandleInput(ovrApp * app )
         ovrVector3f right = { mat.M[0][0], mat.M[1][0], mat.M[2][0] };
         ovrVector3f up = { mat.M[0][1], mat.M[1][1], mat.M[2][1] };
 
-        double speed = 0.1;
+        double speed = 0.5;
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // move forward
             ALOGV("move forward");

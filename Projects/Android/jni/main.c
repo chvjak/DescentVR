@@ -94,6 +94,7 @@ static void app_handle_cmd(struct android_app* app, int32_t cmd) {
 * event loop for receiving input events and doing other things.
 */
 extern AAssetManager* Asset_manager;
+extern int allowed_to_fire_missile(void);
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
     ALOGV("android_app_entry()");
@@ -126,6 +127,9 @@ void android_main(struct android_app* app) {
     EglInitExtensions();
 
     GL(glDisable(GL_FRAMEBUFFER_SRGB_EXT));
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     appState.UseMultiview &= glExtensions.multi_view;
 
@@ -272,7 +276,10 @@ void android_main(struct android_app* app) {
 
         {
             // update game state
+
             calc_frame_time();
+            GameTime += FrameTime;
+
             do_ai_frame_all();
             object_move_all();
             do_special_effects();
@@ -319,7 +326,11 @@ typedef struct ovrTracking2_ {
 
             if (fire_secondary)
             {
-                do_missile_firing();
+                Secondary_weapon = HOMING_INDEX;
+                Players[Player_num].secondary_ammo[Secondary_weapon] = 10;
+
+                if (allowed_to_fire_missile())
+                    do_missile_firing();
                 fire_secondary = false;
             }
         }

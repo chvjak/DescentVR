@@ -271,7 +271,12 @@ uniform sampler2D texSampler;\n\
 out lowp vec4 outColor;\n\
 void main()\n\
 {\n\
-     outColor = mix(texture(texSampler, aTexCoords), vec4(aColors, 1.f), 0.5f);\n\
+    vec4 sample1 = texture(texSampler, aTexCoords);\n\
+    if (sample1.a == 0.0f) {\n\
+        outColor = sample1;\n\
+    } else {\n\
+        outColor = mix(sample1, vec4(aColors, 1.f), 0.5);\n\
+    }\n\
 }";
 
 
