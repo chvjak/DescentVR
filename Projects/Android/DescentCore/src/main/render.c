@@ -886,18 +886,18 @@ void do_render_object(int objnum)
 
 #ifndef NDEBUG
 int	draw_boxes=0;
-int window_check=1,draw_edges=0,new_seg_sorting=1,pre_draw_segs=0;
+int window_check=0,draw_edges=0,new_seg_sorting=1,pre_draw_segs=0;
 int no_migrate_segs=1,migrate_objects=1,behind_check=1;
 int check_window_check=0;
 #else
 #define draw_boxes			0
-#define window_check			1
+#define window_check			0
 #define draw_edges			0
 #define new_seg_sorting		1
 #define pre_draw_segs		0
 #define no_migrate_segs		1
 #define migrate_objects		1
-#define behind_check			1
+#define behind_check		0
 #define check_window_check	0
 #endif
 
@@ -972,7 +972,7 @@ void render_segment(int segnum)
 
 	cc=rotate_list(8,&seg->verts);
 
-	if (! cc.uand) {		//all off screen?
+	if (1 || ! cc.uand) {		//all off screen?
 
 //mprintf( (0, "!"));
 		//DEBUG mprintf( (0, "[Segment %d: ", segnum ));
