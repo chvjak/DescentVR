@@ -5,7 +5,6 @@
 //  Created by Devin Tuchsen on 11/1/15.
 //  Copyright © 2015 Devin Tuchsen. All rights reserved.
 //
-
 #include <math.h>
 #include "drawogles.h"
 #include "globvars.h"
@@ -244,57 +243,42 @@ bool g3_draw_tmap_ogles(int nv, g3s_point** pointlist, g3s_uvl* uvl_list, grs_bi
     return 1;
 }
 
+extern ubyte gr_current_pal[256*3];
 int g3_draw_poly_ogles(int nv, g3s_point **pointlist) {
-    return 1;
-    GLfloat *vertices;
-    GLubyte alpha;
-    int i;
-
-    vertices = malloc(sizeof(GLfloat) * 3 * nv);
+    GLfloat* vertices = (GLfloat*)malloc(sizeof(GLfloat) * 3 * nv);
 
     // Build vertex list
-    for (i = 0; i < nv; ++i) {
+    for (int i = 0; i < nv; ++i) {
         vertices[i * 3] = f2fl(pointlist[i]->p3_vec.x);
         vertices[i * 3 + 1] = f2fl(pointlist[i]->p3_vec.y);
         vertices[i * 3 + 2] = -f2fl(pointlist[i]->p3_vec.z);
     }
 
-    if (Gr_scanline_darkening_level >= GR_FADE_LEVELS ) {
-        alpha = 255;
-    } else {
-        alpha = 255 - ((float)Gr_scanline_darkening_level / (float)GR_FADE_LEVELS) * 255.0f;
-    }
+    GLfloat alpha = 255; // shader accepts 3 component color at the moment
 
-    glDisable(GL_TEXTURE_2D);
+    // ALSO seems color scaling is wrong
+    GLfloat colors[] = { gr_current_pal[grd_curcanv->cv_color * 3] * 4 / 255.f,
+                         gr_current_pal[grd_curcanv->cv_color * 3 + 1] * 4 / 255.f,
+                         gr_current_pal[grd_curcanv->cv_color * 3 + 2] * 4 / 255.f,
 
-    GLuint vertexbuffer;
-    glGenBuffers(1, &vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+                         gr_current_pal[grd_curcanv->cv_color * 3] * 4 / 255.f,
+                         gr_current_pal[grd_curcanv->cv_color * 3 + 1] * 4 / 255.f,
+                         gr_current_pal[grd_curcanv->cv_color * 3 + 2] * 4 / 255.f,
 
-    // 1st attribute buffer : vertices
-    // TODO: investogate color http://www.opengl-tutorial.org/beginners-tutorials/tutorial-4-a-colored-cube/
-    // can bind color buffer of the same number of elems with repeated values (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 0, 0), ...
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glVertexAttribPointer(
-            0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-            nv,                  // size
-            GL_FLOAT,           // type
-            GL_FALSE,           // normalized?
-            0,                  // stride
-            (void*)0            // array buffer offset
-    );
+                         gr_current_pal[grd_curcanv->cv_color * 3] * 4 / 255.f,
+                         gr_current_pal[grd_curcanv->cv_color * 3 + 1] * 4 / 255.f,
+                         gr_current_pal[grd_curcanv->cv_color * 3 + 2] * 4 / 255.f,
+    };
+    GLfloat texCoords[] = { -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, }; // magick number to say the shader not to use texture
 
-    // Draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, nv); // Starting from vertex 0; nv vertices total -> 1 triangle
-    glDisableVertexAttribArray(0);
+    draw_with_texture(3, vertices, texCoords, colors, 13); // TODO: respect nv
 
-    // TODO: investigate resource cleanup
+    free(vertices); // can be on stack
 
-    free(vertices);
     return 0;
+
 }
+
 
 int g3_draw_line_ogles(g3s_point *p0, g3s_point *p1) {
     return 1;

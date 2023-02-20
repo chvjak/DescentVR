@@ -257,7 +257,7 @@ out vec3 aColors;\n\
  \n\
 void main()\n\
 {\n\
-	gl_Position = sm.ProjectionMatrix[VIEW_ID] * ( sm.ViewMatrix[VIEW_ID] * ( vec4( vertexPosition * 0.1, 1.0 ) ) );\n\
+	gl_Position = sm.ProjectionMatrix[VIEW_ID] * ( sm.ViewMatrix[VIEW_ID] * ( vec4( vertexPosition, 1.0 ) ) );\n\
 	aTexCoords = vTexCoords;\n\
 	aColors = vertexColor;\n\
 }\n";
@@ -271,14 +271,20 @@ uniform sampler2D texSampler;\n\
 out lowp vec4 outColor;\n\
 void main()\n\
 {\n\
-    vec4 sample1 = texture(texSampler, aTexCoords);\n\
-    if (sample1.a == 0.0f) {\n\
-        outColor = sample1;\n\
-    } else {\n\
-        outColor = mix(sample1, vec4(aColors, 1.f), 0.5);\n\
-    }\n\
+    if(aTexCoords.x == -1.f && aTexCoords.y == -1.f)\
+       outColor = vec4(aColors, 1.f);\n\
+    else\
+    {\
+        vec4 sample1 = texture(texSampler, aTexCoords);\n\
+        if (sample1.a == 0.0f) {\n\
+            outColor = sample1;\n\
+        } else {\n\
+            outColor = mix(sample1, vec4(aColors, 1.f), 0.5);\n\
+        }\n\
+    }\
 }";
 
+// TODO: May be don't mix, seems to look better
 
 /*
 ================================================================================
@@ -745,5 +751,6 @@ void ovrApp_HandleVrApiEvents(ovrApp* app);
 
 extern ovrVector3f shipPosition;
 extern bool fire_secondary;
+extern bool fire_primary;
 
 #endif
