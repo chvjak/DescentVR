@@ -330,6 +330,7 @@ static char rcsid[] = "$Id: render.c 2.5 1995/12/19 15:31:36 john Exp $";
 #include "newmenu.h"
 #include "mem.h"
 #include "piggy.h"
+#include "globvars.h"
 
 #define	INITIAL_LOCAL_LIGHT	(F1_0/4)		// local light value in segment of occurence (of light emission)
 
@@ -352,7 +353,7 @@ vms_vector Viewer_eye;	//valid during render
 
 int	N_render_segs;
 
-fix Render_zoom = 0x9000;							//the player's zoom factor
+fix Render_zoom = F1_0;							//the player's zoom factor
 
 #ifndef NDEBUG
 ubyte object_rendered[MAX_OBJECTS];
@@ -2177,6 +2178,9 @@ void render_frame(fix eye_offset)
 	if (start_seg_num==-1)
 		start_seg_num = Viewer->segnum;
 
+	vms_vector	temp_pos0 = View_position;
+	vms_matrix	temp_view0 = View_matrix;
+
 	if (Viewer==ConsoleObject && Use_player_head_angles) {
 		vms_matrix headm,viewm;
 		vm_angles_2_matrix(&headm,&Player_head_angles);
@@ -2201,7 +2205,12 @@ void render_frame(fix eye_offset)
 		}
 		g3_set_view_matrix(&Viewer_eye,&Viewer->orient,fixdiv(Render_zoom,Zoom_factor));
 #else
-		g3_set_view_matrix(&Viewer_eye,&Viewer->orient,Render_zoom);
+		vms_vector	temp_pos = ZERO_VECTOR;
+		vms_matrix	temp_view = IDENTITY_MATRIX;
+
+		g3_set_view_matrix(&temp_pos, &temp_view, F1_0);
+
+
 #endif
 	}
 
@@ -2217,6 +2226,9 @@ void render_frame(fix eye_offset)
 		draw_3d_reticle(eye_offset);
 
 	g3_end_frame();
+
+	View_position = temp_pos0;
+	View_matrix = temp_view0;
 
 	FrameCount++;		//we have rendered a frame
 }

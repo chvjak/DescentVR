@@ -95,6 +95,9 @@ static void app_handle_cmd(struct android_app* app, int32_t cmd) {
 */
 extern AAssetManager* Asset_manager;
 extern int allowed_to_fire_missile(void);
+
+ovrVector3f cross_product(ovrVector3f *pF, ovrVector3f *pF1);
+
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
     ALOGV("android_app_entry()");
@@ -287,42 +290,21 @@ void android_main(struct android_app* app) {
             triggers_frame_process();
             update_object_seg(ConsoleObject);
 
-            /*
-             /// Tracking state at a given absolute time.
-typedef struct ovrTracking2_ {
-    /// Sensor status described by ovrTrackingStatus flags.
-    unsigned int Status;
-
-    OVR_VRAPI_PADDING(4)
-
-    /// Predicted head configuration at the requested absolute time.
-    /// The pose describes the head orientation and center eye position.
-    ovrRigidBodyPosef HeadPose;
-    struct {
-        ovrMatrix4f ProjectionMatrix;
-        ovrMatrix4f ViewMatrix;
-    } Eye[VRAPI_EYE_COUNT];
-} ovrTracking2;
-             */
-
-
-            // tracking variable contains orientation and position in ViewMatrix
-            // we should also have shipPosition variable wich is updated via controls
-
             // TODO: switch to c++ otherwise can't use op() overloads
             // TODO: add pos offset from tracking
             ConsoleObject->pos = (vms_vector) {fl2f(shipPosition.x), fl2f(shipPosition.y), fl2f(-shipPosition.z)};
 
             ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
 
-            ovrVector3f forward = { mat.M[0][2], mat.M[1][2], mat.M[2][2] };
-            ovrVector3f right = { mat.M[0][0], mat.M[1][0], mat.M[2][0] };
-            ovrVector3f up = { mat.M[0][1], mat.M[1][1], mat.M[2][1] };
+            ovrVector3f up = { mat.M[1][0], mat.M[1][1], mat.M[1][2] };
+            ovrVector3f forward =      { mat.M[2][0], mat.M[2][1], mat.M[2][2] };
+            ovrVector3f right =      { mat.M[0][0], mat.M[0][1], mat.M[0][2] };
+            //ovrVector3f right = cross_product(&forward, &up);
 
-            // Behaves weirdly
-            //ConsoleObject->orient.fvec = (vms_vector){ fl2f(forward.x), fl2f(forward.y), fl2f(forward.z), };
-            //ConsoleObject->orient.uvec = (vms_vector){ fl2f(up.x), fl2f(up.y), fl2f(up.z), };
-            //ConsoleObject->orient.rvec = (vms_vector){ fl2f(right.x), fl2f(right.y), fl2f(right.z), };
+            // TODO: fix dependes on orieantation vs world e.g - if facing against original z - up-down flipped
+            ConsoleObject->orient.fvec = (vms_vector){ fl2f(forward.x), fl2f(forward.y), fl2f(forward.z), };
+            ConsoleObject->orient.uvec = (vms_vector){ fl2f(up.x), fl2f(up.y), fl2f(up.z), };
+            ConsoleObject->orient.rvec = (vms_vector){ fl2f(right.x), fl2f(right.y), fl2f(right.z), };
 
             if (fire_secondary)
             {
@@ -332,6 +314,12 @@ typedef struct ovrTracking2_ {
                 if (allowed_to_fire_missile())
                     do_missile_firing();
                 fire_secondary = false;
+            }
+
+            if (fire_primary)
+            {
+                do_laser_firing_player();
+                fire_primary = false;
             }
         }
 
@@ -384,5 +372,12 @@ typedef struct ovrTracking2_ {
     vrapi_Shutdown();
 
     (*java.Vm)->DetachCurrentThread(java.Vm);
+}
+
+ovrVector3f cross_product(ovrVector3f *a, ovrVector3f *b) {
+    ovrVector3f result = {a->y * b->z - a->z * b->y,
+                        -(a->x * b->z - a->z * b->x),
+                          a->x * b->y - a->y * b->x};
+    return result;
 }
 

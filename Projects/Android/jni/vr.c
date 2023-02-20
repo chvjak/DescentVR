@@ -1006,11 +1006,8 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
         const ovrSimulation* simulation,
         const ovrTracking2* tracking,
         ovrMobile* ovr) {
-    ovrMatrix4f rotationMatrices; // NUM_ROTATIONS i.e 4 different rotations randomly assigned to objects
-    rotationMatrices = ovrMatrix4f_CreateRotation(
-            0, // radians * time
-            0,
-            0);
+    ovrMatrix4f rotationMatrices;
+    rotationMatrices = ovrMatrix4f_CreateRotation(0,0,0);  // radians * time
 
     // Update the instance transform attributes.
     GL(glBindBuffer(GL_ARRAY_BUFFER, scene->InstanceTransformBuffer));
@@ -1047,9 +1044,14 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
 
     ovrTracking2 updatedTracking = *tracking;
 
+    ovrMatrix4f translation = ovrMatrix4f_CreateTranslation(-shipPosition.x, -shipPosition.y, -shipPosition.z);
+
+    ovrMatrix4f eye0 =  ovrMatrix4f_Multiply(&updatedTracking.Eye[0].ViewMatrix, &translation);
+    ovrMatrix4f eye1 =  ovrMatrix4f_Multiply(&updatedTracking.Eye[1].ViewMatrix, &translation);
+
     ovrMatrix4f eyeViewMatrixTransposed[2];
-    eyeViewMatrixTransposed[0] = ovrMatrix4f_Transpose(&updatedTracking.Eye[0].ViewMatrix);
-    eyeViewMatrixTransposed[1] = ovrMatrix4f_Transpose(&updatedTracking.Eye[1].ViewMatrix);
+    eyeViewMatrixTransposed[0] = ovrMatrix4f_Transpose(&eye0);
+    eyeViewMatrixTransposed[1] = ovrMatrix4f_Transpose(&eye1);
 
     ovrMatrix4f projectionMatrixTransposed[2];
     projectionMatrixTransposed[0] = ovrMatrix4f_Transpose(&updatedTracking.Eye[0].ProjectionMatrix);
@@ -1111,8 +1113,7 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
         GL(glClearColor(0.125f, 0.0f, 0.125f, 1.0f));
         GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-        render_frame(0);
-
+        GL(render_frame(0));
 
         // POST DRAW
         GL(glUseProgram(0));
@@ -1236,6 +1237,7 @@ ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1);
 ovrVector3f shipPosition = {0, 0, 0};
 
 bool fire_secondary = false;
+bool fire_primary = false;
 
 void ovrApp_HandleInput(ovrApp * app )
 {
@@ -1330,17 +1332,12 @@ void ovrApp_HandleInput(ovrApp * app )
             // move forward
             ALOGV("move forward");
             shipPosition = vecadd(shipPosition, vecmul(shipOrientation, speed));
-
-            ALOGV("shippos(%d, %d, %d)", shipPosition.x, shipPosition.y, shipPosition.z);
         }
         leftJoyState = (leftTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
             // move backward
             ALOGV("move backward");
-            
             shipPosition = vecadd(shipPosition, vecmul(shipOrientation, -speed));
-
-            ALOGV("shippos(%d, %d, %d)", shipPosition.x, shipPosition.y, shipPosition.z);
         }
     }
 
@@ -1348,6 +1345,7 @@ void ovrApp_HandleInput(ovrApp * app )
     if((dominantTrackedRemoteState->Buttons & ovrButton_Trigger))
     {
         ALOGV("fire primary");
+        fire_primary = true;
 
     }
 
