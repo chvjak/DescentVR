@@ -87,6 +87,8 @@ void g3_start_frame(void) {
 		Window_scale.x = f1_0;
 	}
 
+	Window_scale.x = f1_0;
+	Window_scale.y = f1_0;
 	Window_scale.z = f1_0;		//always 1
 
 	init_free_points();

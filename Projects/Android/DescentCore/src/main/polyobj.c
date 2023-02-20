@@ -538,7 +538,7 @@ void draw_polygon_model(vms_vector *pos,vms_matrix *orient,vms_angvec *anim_angl
 	po=&Polygon_models[model_num];
 
 	//check if should use simple model
-	if (po->simpler_model )					//must have a simpler model
+	if (0 && po->simpler_model)					//must have a simpler model
 		if (flags==0)							//can't switch if this is debris
 			//!!if (!alt_textures) {				//alternate textures might not match
 			//alt textures might not match, but in the one case we're using this
