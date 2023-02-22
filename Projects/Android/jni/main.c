@@ -298,10 +298,11 @@ void android_main(struct android_app* app) {
 
             ovrVector3f up = { mat.M[1][0], mat.M[1][1], mat.M[1][2] };
             ovrVector3f forward =      { mat.M[2][0], mat.M[2][1], mat.M[2][2] };
-            ovrVector3f right =      { mat.M[0][0], mat.M[0][1], mat.M[0][2] };
-            //ovrVector3f right = cross_product(&forward, &up);
+            //ovrVector3f right =      { mat.M[0][0], mat.M[0][1], mat.M[0][2] };
+            ovrVector3f right = cross_product(&forward, &up);
 
-            // TODO: fix dependes on orieantation vs world e.g - if facing against original z - up-down flipped
+            // TODO: fix dependes on orieantation vs world e.g - if facing against original z - up-down flipped meaining wrong sign of rotation around x axis
+            // for alternative solution - wrong sign of rotation around z
             ConsoleObject->orient.fvec = (vms_vector){ fl2f(forward.x), fl2f(forward.y), fl2f(forward.z), };
             ConsoleObject->orient.uvec = (vms_vector){ fl2f(up.x), fl2f(up.y), fl2f(up.z), };
             ConsoleObject->orient.rvec = (vms_vector){ fl2f(right.x), fl2f(right.y), fl2f(right.z), };
