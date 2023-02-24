@@ -11,12 +11,14 @@ Copyright   :   Copyright (c) Facebook Technologies, LLC and its affiliates. All
 
 *************************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
+#include <ctime>
+
+extern "C"
+{
 #include <unistd.h>
 #include <pthread.h>
+}
+
 #include <sys/prctl.h> // for prctl( PR_SET_NAME )
 #include <android/log.h>
 #include <android/native_window_jni.h> // for native window JNI
@@ -27,14 +29,16 @@ Copyright   :   Copyright (c) Facebook Technologies, LLC and its affiliates. All
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
 
-
 #include "VrApi.h"
 #include "VrApi_Helpers.h"
 #include "VrApi_SystemUtils.h"
 #include "VrApi_Input.h"
 #include "vr.h"
 
+extern "C"
+{
 #include <render.h>
+}
 
 /*
 ================================================================================
@@ -63,11 +67,11 @@ void EglInitExtensions() {
     const char* allExtensions = (const char*)glGetString(GL_EXTENSIONS);
     if (allExtensions != NULL) {
         glExtensions.multi_view = strstr(allExtensions, "GL_OVR_multiview2") &&
-            strstr(allExtensions, "GL_OVR_multiview_multisampled_render_to_texture");
+                                  strstr(allExtensions, "GL_OVR_multiview_multisampled_render_to_texture");
 
         glExtensions.EXT_texture_border_clamp =
-            strstr(allExtensions, "GL_EXT_texture_border_clamp") ||
-            strstr(allExtensions, "GL_OES_texture_border_clamp");
+                strstr(allExtensions, "GL_EXT_texture_border_clamp") ||
+                strstr(allExtensions, "GL_OES_texture_border_clamp");
     }
 }
 
@@ -109,20 +113,20 @@ static const char* EglErrorString(const EGLint error) {
 }
 
 static const char* GlFrameBufferStatusString(GLenum status) {
-    switch (status) {
-        case GL_FRAMEBUFFER_UNDEFINED:
-            return "GL_FRAMEBUFFER_UNDEFINED";
-        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
-        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
-        case GL_FRAMEBUFFER_UNSUPPORTED:
-            return "GL_FRAMEBUFFER_UNSUPPORTED";
-        case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-            return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
-        default:
-            return "unknown";
-    }
+switch (status) {
+case GL_FRAMEBUFFER_UNDEFINED:
+return "GL_FRAMEBUFFER_UNDEFINED";
+case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+case GL_FRAMEBUFFER_UNSUPPORTED:
+return "GL_FRAMEBUFFER_UNSUPPORTED";
+case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+default:
+return "unknown";
+}
 }
 
 
@@ -153,21 +157,21 @@ void ovrEgl_CreateContext(ovrEgl* egl, const ovrEgl* shareEgl) {
         return;
     }
     const EGLint configAttribs[] = {
-        EGL_RED_SIZE,
-        8,
-        EGL_GREEN_SIZE,
-        8,
-        EGL_BLUE_SIZE,
-        8,
-        EGL_ALPHA_SIZE,
-        8, // need alpha for the multi-pass timewarp compositor
-        EGL_DEPTH_SIZE,
-        0,
-        EGL_STENCIL_SIZE,
-        0,
-        EGL_SAMPLES,
-        0,
-        EGL_NONE};
+            EGL_RED_SIZE,
+            8,
+            EGL_GREEN_SIZE,
+            8,
+            EGL_BLUE_SIZE,
+            8,
+            EGL_ALPHA_SIZE,
+            8, // need alpha for the multi-pass timewarp compositor
+            EGL_DEPTH_SIZE,
+            0,
+            EGL_STENCIL_SIZE,
+            0,
+            EGL_SAMPLES,
+            0,
+            EGL_NONE};
     egl->Config = 0;
     for (int i = 0; i < numConfigs; i++) {
         EGLint value = 0;
@@ -203,10 +207,10 @@ void ovrEgl_CreateContext(ovrEgl* egl, const ovrEgl* shareEgl) {
     EGLint contextAttribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
     ALOGV("        Context = eglCreateContext( Display, Config, EGL_NO_CONTEXT, contextAttribs )");
     egl->Context = eglCreateContext(
-        egl->Display,
-        egl->Config,
-        (shareEgl != NULL) ? shareEgl->Context : EGL_NO_CONTEXT,
-        contextAttribs);
+            egl->Display,
+            egl->Config,
+            (shareEgl != NULL) ? shareEgl->Context : EGL_NO_CONTEXT,
+            contextAttribs);
     if (egl->Context == EGL_NO_CONTEXT) {
         ALOGE("        eglCreateContext() failed: %s", EglErrorString(eglGetError()));
         return;
@@ -271,127 +275,6 @@ void ovrEgl_Clear(ovrEgl* egl) {
     egl->MainSurface = EGL_NO_SURFACE;
     egl->Context = EGL_NO_CONTEXT;
 }
-/*
-================================================================================
-
-ovrGeometry
-
-================================================================================
-*/
-
-
-void ovrGeometry_Clear(ovrGeometry* geometry) {
-    geometry->VertexBuffer = 0;
-    geometry->IndexBuffer = 0;
-    geometry->VertexArrayObject = 0;
-    geometry->VertexCount = 0;
-    geometry->IndexCount = 0;
-    for (int i = 0; i < MAX_VERTEX_ATTRIB_POINTERS; i++) {
-        memset(&geometry->VertexAttribs[i], 0, sizeof(geometry->VertexAttribs[i]));
-        geometry->VertexAttribs[i].Index = -1;
-    }
-}
-
-void ovrGeometry_CreateCube(ovrGeometry* geometry) {
-    typedef struct {
-        char positions[8][4];
-        unsigned char colors[8][4];
-    } ovrCubeVertices;
-
-    static const ovrCubeVertices cubeVertices = {
-        // positions
-        {
-            {-127, +127, -127, +127},
-            {+127, +127, -127, +127},
-            {+127, +127, +127, +127},
-            {-127, +127, +127, +127}, // top
-            {-127, -127, -127, +127},
-            {-127, -127, +127, +127},
-            {+127, -127, +127, +127},
-            {+127, -127, -127, +127} // bottom
-        },
-        // colors
-        {{255, 0, 255, 255},
-         {0, 255, 0, 255},
-         {0, 0, 255, 255},
-         {255, 0, 0, 255},
-         {0, 0, 255, 255},
-         {0, 255, 0, 255},
-         {255, 0, 255, 255},
-         {255, 0, 0, 255}},
-    };
-
-    static const unsigned short cubeIndices[36] = {
-        0, 2, 1, 2, 0, 3, // top
-        4, 6, 5, 6, 4, 7, // bottom
-        2, 6, 7, 7, 1, 2, // right
-        0, 4, 5, 5, 3, 0, // left
-        3, 5, 6, 6, 2, 3, // front
-        0, 1, 7, 7, 4, 0 // back
-    };
-
-    geometry->VertexCount = 8;
-    geometry->IndexCount = 36;
-
-    geometry->VertexAttribs[0].Index = VERTEX_ATTRIBUTE_LOCATION_POSITION;
-    geometry->VertexAttribs[0].Size = 4;
-    geometry->VertexAttribs[0].Type = GL_BYTE;
-    geometry->VertexAttribs[0].Normalized = true;
-    geometry->VertexAttribs[0].Stride = sizeof(cubeVertices.positions[0]);
-    geometry->VertexAttribs[0].Pointer = (const GLvoid*)offsetof(ovrCubeVertices, positions);
-
-    geometry->VertexAttribs[1].Index = VERTEX_ATTRIBUTE_LOCATION_COLOR;
-    geometry->VertexAttribs[1].Size = 4;
-    geometry->VertexAttribs[1].Type = GL_UNSIGNED_BYTE;
-    geometry->VertexAttribs[1].Normalized = true;
-    geometry->VertexAttribs[1].Stride = sizeof(cubeVertices.colors[0]);
-    geometry->VertexAttribs[1].Pointer = (const GLvoid*)offsetof(ovrCubeVertices, colors);
-
-    GL(glGenBuffers(1, &geometry->VertexBuffer));
-    GL(glBindBuffer(GL_ARRAY_BUFFER, geometry->VertexBuffer));
-    GL(glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW));
-    GL(glBindBuffer(GL_ARRAY_BUFFER, 0));
-
-    GL(glGenBuffers(1, &geometry->IndexBuffer));
-    GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry->IndexBuffer));
-    GL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW));
-    GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-}
-
-void ovrGeometry_Destroy(ovrGeometry* geometry) {
-    GL(glDeleteBuffers(1, &geometry->IndexBuffer));
-    GL(glDeleteBuffers(1, &geometry->VertexBuffer));
-
-    ovrGeometry_Clear(geometry);
-}
-
-void ovrGeometry_CreateVAO(ovrGeometry* geometry) {
-    GL(glGenVertexArrays(1, &geometry->VertexArrayObject));
-    GL(glBindVertexArray(geometry->VertexArrayObject));
-
-    GL(glBindBuffer(GL_ARRAY_BUFFER, geometry->VertexBuffer));
-
-    for (int i = 0; i < MAX_VERTEX_ATTRIB_POINTERS; i++) {
-        if (geometry->VertexAttribs[i].Index != -1) {
-            GL(glEnableVertexAttribArray(geometry->VertexAttribs[i].Index));
-            GL(glVertexAttribPointer(
-                geometry->VertexAttribs[i].Index,
-                geometry->VertexAttribs[i].Size,
-                geometry->VertexAttribs[i].Type,
-                geometry->VertexAttribs[i].Normalized,
-                geometry->VertexAttribs[i].Stride,
-                geometry->VertexAttribs[i].Pointer));
-        }
-    }
-
-    GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry->IndexBuffer));
-
-    GL(glBindVertexArray(0));
-}
-
-void ovrGeometry_DestroyVAO(ovrGeometry* geometry) {
-    GL(glDeleteVertexArrays(1, &geometry->VertexArrayObject));
-}
 
 /*
 ================================================================================
@@ -413,19 +296,19 @@ void ovrProgram_Clear(ovrProgram* program) {
 
 GLint program_with_tex_id;
 
-static bool ovrProgram_Create(
-    ovrProgram* program,
-    const char* vertexSource,
-    const char* fragmentSource,
-    const bool useMultiview) {
+static int ovrProgram_Create(
+        ovrProgram* program,
+        const char* vertexSource,
+        const char* fragmentSource,
+        const int useMultiview) {
     GLint r;
 
     GL(program->VertexShader = glCreateShader(GL_VERTEX_SHADER));
 
     const char* vertexSources[3] = {
-        programVersion,
-        (useMultiview) ? "#define DISABLE_MULTIVIEW 0\n" : "#define DISABLE_MULTIVIEW 1\n",
-        vertexSource};
+            programVersion,
+            (useMultiview) ? "#define DISABLE_MULTIVIEW 0\n" : "#define DISABLE_MULTIVIEW 1\n",
+            vertexSource};
     GL(glShaderSource(program->VertexShader, 3, vertexSources, 0));
     GL(glCompileShader(program->VertexShader));
     GL(glGetShaderiv(program->VertexShader, GL_COMPILE_STATUS, &r));
@@ -456,9 +339,9 @@ static bool ovrProgram_Create(
     // Bind the vertex attribute locations.
     for (int i = 0; i < sizeof(ProgramVertexAttributes) / sizeof(ProgramVertexAttributes[0]); i++) {
         GL(glBindAttribLocation(
-            program->Program,
-            ProgramVertexAttributes[i].location,
-            ProgramVertexAttributes[i].name));
+                program->Program,
+                ProgramVertexAttributes[i].location,
+                ProgramVertexAttributes[i].name));
     }
 
     GL(glLinkProgram(program->Program));
@@ -478,15 +361,15 @@ static bool ovrProgram_Create(
         const int uniformIndex = ProgramUniforms[i].index;
         if (ProgramUniforms[i].type == UNIFORM_TYPE_BUFFER) {
             GL(program->UniformLocation[uniformIndex] =
-                   glGetUniformBlockIndex(program->Program, ProgramUniforms[i].name));
+                       glGetUniformBlockIndex(program->Program, ProgramUniforms[i].name));
             program->UniformBinding[uniformIndex] = numBufferBindings++;
             GL(glUniformBlockBinding(
-                program->Program,
-                program->UniformLocation[uniformIndex],
-                program->UniformBinding[uniformIndex]));
+                    program->Program,
+                    program->UniformLocation[uniformIndex],
+                    program->UniformBinding[uniformIndex]));
         } else {
             GL(program->UniformLocation[uniformIndex] =
-                   glGetUniformLocation(program->Program, ProgramUniforms[i].name));
+                       glGetUniformLocation(program->Program, ProgramUniforms[i].name));
             program->UniformBinding[uniformIndex] = program->UniformLocation[uniformIndex];
         }
     }
@@ -532,7 +415,7 @@ ovrFramebuffer
 ================================================================================
 */
 
- void ovrFramebuffer_Clear(ovrFramebuffer* frameBuffer) {
+void ovrFramebuffer_Clear(ovrFramebuffer* frameBuffer) {
     frameBuffer->Width = 0;
     frameBuffer->Height = 0;
     frameBuffer->Multisamples = 0;
@@ -544,53 +427,53 @@ ovrFramebuffer
     frameBuffer->FrameBuffers = NULL;
 }
 
- bool ovrFramebuffer_Create(
-    ovrFramebuffer* frameBuffer,
-    const bool useMultiview,
-    const GLenum colorFormat,
-    const int width,
-    const int height,
-    const int multisamples) {
+int ovrFramebuffer_Create(
+        ovrFramebuffer* frameBuffer,
+        const int useMultiview,
+        const GLenum colorFormat,
+        const int width,
+        const int height,
+        const int multisamples) {
     PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC glRenderbufferStorageMultisampleEXT =
-        (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC)eglGetProcAddress(
-            "glRenderbufferStorageMultisampleEXT");
+            (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC)eglGetProcAddress(
+                    "glRenderbufferStorageMultisampleEXT");
     PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC glFramebufferTexture2DMultisampleEXT =
-        (PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC)eglGetProcAddress(
-            "glFramebufferTexture2DMultisampleEXT");
+            (PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC)eglGetProcAddress(
+                    "glFramebufferTexture2DMultisampleEXT");
 
     PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC glFramebufferTextureMultiviewOVR =
-        (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC)eglGetProcAddress(
-            "glFramebufferTextureMultiviewOVR");
+            (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC)eglGetProcAddress(
+                    "glFramebufferTextureMultiviewOVR");
     PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC glFramebufferTextureMultisampleMultiviewOVR =
-        (PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC)eglGetProcAddress(
-            "glFramebufferTextureMultisampleMultiviewOVR");
+            (PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC)eglGetProcAddress(
+                    "glFramebufferTextureMultisampleMultiviewOVR");
 
     frameBuffer->Width = width;
     frameBuffer->Height = height;
     frameBuffer->Multisamples = multisamples;
     frameBuffer->UseMultiview =
-        (useMultiview && (glFramebufferTextureMultiviewOVR != NULL)) ? true : false;
+            (useMultiview && (glFramebufferTextureMultiviewOVR != NULL)) ? true : false;
 
     frameBuffer->ColorTextureSwapChain = vrapi_CreateTextureSwapChain3(
-        frameBuffer->UseMultiview ? VRAPI_TEXTURE_TYPE_2D_ARRAY : VRAPI_TEXTURE_TYPE_2D,
-        colorFormat,
-        width,
-        height,
-        1,
-        3);
+            frameBuffer->UseMultiview ? VRAPI_TEXTURE_TYPE_2D_ARRAY : VRAPI_TEXTURE_TYPE_2D,
+            colorFormat,
+            width,
+            height,
+            1,
+            3);
     frameBuffer->TextureSwapChainLength =
-        vrapi_GetTextureSwapChainLength(frameBuffer->ColorTextureSwapChain);
+            vrapi_GetTextureSwapChainLength(frameBuffer->ColorTextureSwapChain);
     frameBuffer->DepthBuffers =
-        (GLuint*)malloc(frameBuffer->TextureSwapChainLength * sizeof(GLuint));
+            (GLuint*)malloc(frameBuffer->TextureSwapChainLength * sizeof(GLuint));
     frameBuffer->FrameBuffers =
-        (GLuint*)malloc(frameBuffer->TextureSwapChainLength * sizeof(GLuint));
+            (GLuint*)malloc(frameBuffer->TextureSwapChainLength * sizeof(GLuint));
 
     ALOGV("        frameBuffer->UseMultiview = %d", frameBuffer->UseMultiview);
 
     for (int i = 0; i < frameBuffer->TextureSwapChainLength; i++) {
         // Create the color buffer texture.
         const GLuint colorTexture =
-            vrapi_GetTextureSwapChainHandle(frameBuffer->ColorTextureSwapChain, i);
+                vrapi_GetTextureSwapChainHandle(frameBuffer->ColorTextureSwapChain, i);
         GLenum colorTextureTarget = frameBuffer->UseMultiview ? GL_TEXTURE_2D_ARRAY : GL_TEXTURE_2D;
         GL(glBindTexture(colorTextureTarget, colorTexture));
         GL(glTexParameteri(colorTextureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
@@ -613,44 +496,44 @@ ovrFramebuffer
             GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer->FrameBuffers[i]));
             if (multisamples > 1 && (glFramebufferTextureMultisampleMultiviewOVR != NULL)) {
                 GL(glFramebufferTextureMultisampleMultiviewOVR(
-                    GL_DRAW_FRAMEBUFFER,
-                    GL_DEPTH_ATTACHMENT,
-                    frameBuffer->DepthBuffers[i],
-                    0 /* level */,
-                    multisamples /* samples */,
-                    0 /* baseViewIndex */,
-                    2 /* numViews */));
+                        GL_DRAW_FRAMEBUFFER,
+                        GL_DEPTH_ATTACHMENT,
+                        frameBuffer->DepthBuffers[i],
+                        0 /* level */,
+                        multisamples /* samples */,
+                        0 /* baseViewIndex */,
+                        2 /* numViews */));
                 GL(glFramebufferTextureMultisampleMultiviewOVR(
-                    GL_DRAW_FRAMEBUFFER,
-                    GL_COLOR_ATTACHMENT0,
-                    colorTexture,
-                    0 /* level */,
-                    multisamples /* samples */,
-                    0 /* baseViewIndex */,
-                    2 /* numViews */));
+                        GL_DRAW_FRAMEBUFFER,
+                        GL_COLOR_ATTACHMENT0,
+                        colorTexture,
+                        0 /* level */,
+                        multisamples /* samples */,
+                        0 /* baseViewIndex */,
+                        2 /* numViews */));
             } else {
                 GL(glFramebufferTextureMultiviewOVR(
-                    GL_DRAW_FRAMEBUFFER,
-                    GL_DEPTH_ATTACHMENT,
-                    frameBuffer->DepthBuffers[i],
-                    0 /* level */,
-                    0 /* baseViewIndex */,
-                    2 /* numViews */));
+                        GL_DRAW_FRAMEBUFFER,
+                        GL_DEPTH_ATTACHMENT,
+                        frameBuffer->DepthBuffers[i],
+                        0 /* level */,
+                        0 /* baseViewIndex */,
+                        2 /* numViews */));
                 GL(glFramebufferTextureMultiviewOVR(
-                    GL_DRAW_FRAMEBUFFER,
-                    GL_COLOR_ATTACHMENT0,
-                    colorTexture,
-                    0 /* level */,
-                    0 /* baseViewIndex */,
-                    2 /* numViews */));
+                        GL_DRAW_FRAMEBUFFER,
+                        GL_COLOR_ATTACHMENT0,
+                        colorTexture,
+                        0 /* level */,
+                        0 /* baseViewIndex */,
+                        2 /* numViews */));
             }
 
             GL(GLenum renderFramebufferStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
             GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
             if (renderFramebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
                 ALOGE(
-                    "Incomplete frame buffer object: %s",
-                    GlFrameBufferStatusString(renderFramebufferStatus));
+                        "Incomplete frame buffer object: %s",
+                        GlFrameBufferStatusString(renderFramebufferStatus));
                 return false;
             }
         } else {
@@ -660,7 +543,7 @@ ovrFramebuffer
                 GL(glGenRenderbuffers(1, &frameBuffer->DepthBuffers[i]));
                 GL(glBindRenderbuffer(GL_RENDERBUFFER, frameBuffer->DepthBuffers[i]));
                 GL(glRenderbufferStorageMultisampleEXT(
-                    GL_RENDERBUFFER, multisamples, GL_DEPTH_COMPONENT24, width, height));
+                        GL_RENDERBUFFER, multisamples, GL_DEPTH_COMPONENT24, width, height));
                 GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
                 // Create the frame buffer.
@@ -668,23 +551,23 @@ ovrFramebuffer
                 GL(glGenFramebuffers(1, &frameBuffer->FrameBuffers[i]));
                 GL(glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer->FrameBuffers[i]));
                 GL(glFramebufferTexture2DMultisampleEXT(
-                    GL_FRAMEBUFFER,
-                    GL_COLOR_ATTACHMENT0,
-                    GL_TEXTURE_2D,
-                    colorTexture,
-                    0,
-                    multisamples));
+                        GL_FRAMEBUFFER,
+                        GL_COLOR_ATTACHMENT0,
+                        GL_TEXTURE_2D,
+                        colorTexture,
+                        0,
+                        multisamples));
                 GL(glFramebufferRenderbuffer(
-                    GL_FRAMEBUFFER,
-                    GL_DEPTH_ATTACHMENT,
-                    GL_RENDERBUFFER,
-                    frameBuffer->DepthBuffers[i]));
+                        GL_FRAMEBUFFER,
+                        GL_DEPTH_ATTACHMENT,
+                        GL_RENDERBUFFER,
+                        frameBuffer->DepthBuffers[i]));
                 GL(GLenum renderFramebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER));
                 GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
                 if (renderFramebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
                     ALOGE(
-                        "Incomplete frame buffer object: %s",
-                        GlFrameBufferStatusString(renderFramebufferStatus));
+                            "Incomplete frame buffer object: %s",
+                            GlFrameBufferStatusString(renderFramebufferStatus));
                     return false;
                 }
             } else {
@@ -698,18 +581,18 @@ ovrFramebuffer
                 GL(glGenFramebuffers(1, &frameBuffer->FrameBuffers[i]));
                 GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer->FrameBuffers[i]));
                 GL(glFramebufferRenderbuffer(
-                    GL_DRAW_FRAMEBUFFER,
-                    GL_DEPTH_ATTACHMENT,
-                    GL_RENDERBUFFER,
-                    frameBuffer->DepthBuffers[i]));
+                        GL_DRAW_FRAMEBUFFER,
+                        GL_DEPTH_ATTACHMENT,
+                        GL_RENDERBUFFER,
+                        frameBuffer->DepthBuffers[i]));
                 GL(glFramebufferTexture2D(
-                    GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0));
+                        GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0));
                 GL(GLenum renderFramebufferStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
                 GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
                 if (renderFramebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
                     ALOGE(
-                        "Incomplete frame buffer object: %s",
-                        GlFrameBufferStatusString(renderFramebufferStatus));
+                            "Incomplete frame buffer object: %s",
+                            GlFrameBufferStatusString(renderFramebufferStatus));
                     return false;
                 }
             }
@@ -719,7 +602,7 @@ ovrFramebuffer
     return true;
 }
 
- void ovrFramebuffer_Destroy(ovrFramebuffer* frameBuffer) {
+void ovrFramebuffer_Destroy(ovrFramebuffer* frameBuffer) {
     GL(glDeleteFramebuffers(frameBuffer->TextureSwapChainLength, frameBuffer->FrameBuffers));
     if (frameBuffer->UseMultiview) {
         GL(glDeleteTextures(frameBuffer->TextureSwapChainLength, frameBuffer->DepthBuffers));
@@ -734,16 +617,16 @@ ovrFramebuffer
     ovrFramebuffer_Clear(frameBuffer);
 }
 
- void ovrFramebuffer_SetCurrent(ovrFramebuffer* frameBuffer) {
+void ovrFramebuffer_SetCurrent(ovrFramebuffer* frameBuffer) {
     GL(glBindFramebuffer(
-        GL_DRAW_FRAMEBUFFER, frameBuffer->FrameBuffers[frameBuffer->TextureSwapChainIndex]));
+            GL_DRAW_FRAMEBUFFER, frameBuffer->FrameBuffers[frameBuffer->TextureSwapChainIndex]));
 }
 
- void ovrFramebuffer_SetNone() {
+void ovrFramebuffer_SetNone() {
     GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
 }
 
- void ovrFramebuffer_Resolve(ovrFramebuffer* frameBuffer) {
+void ovrFramebuffer_Resolve(ovrFramebuffer* frameBuffer) {
     // Discard the depth buffer, so the tiler won't need to write it back out to memory.
     const GLenum depthAttachment[1] = {GL_DEPTH_ATTACHMENT};
     glInvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, 1, depthAttachment);
@@ -751,10 +634,10 @@ ovrFramebuffer
     // We now let the resolve happen implicitly.
 }
 
- void ovrFramebuffer_Advance(ovrFramebuffer* frameBuffer) {
+void ovrFramebuffer_Advance(ovrFramebuffer* frameBuffer) {
     // Advance to the next texture from the set.
     frameBuffer->TextureSwapChainIndex =
-        (frameBuffer->TextureSwapChainIndex + 1) % frameBuffer->TextureSwapChainLength;
+            (frameBuffer->TextureSwapChainIndex + 1) % frameBuffer->TextureSwapChainLength;
 }
 
 /*
@@ -773,43 +656,10 @@ void ovrScene_Clear(ovrScene* scene) {
     scene->InstanceTransformBuffer = 0;
 
     ovrProgram_Clear(&scene->Program);
-    ovrGeometry_Clear(&scene->Cube);
 }
 
-bool ovrScene_IsCreated(ovrScene* scene) {
+int ovrScene_IsCreated(ovrScene* scene) {
     return scene->CreatedScene;
-}
-
-void ovrScene_CreateVAOs(ovrScene* scene) {
-    if (!scene->CreatedVAOs) {
-        ovrGeometry_CreateVAO(&scene->Cube);
-
-        // Modify the VAO to use the instance transform attributes.
-        GL(glBindVertexArray(scene->Cube.VertexArrayObject));
-        GL(glBindBuffer(GL_ARRAY_BUFFER, scene->InstanceTransformBuffer));
-        for (int i = 0; i < 4; i++) {
-            GL(glEnableVertexAttribArray(VERTEX_ATTRIBUTE_LOCATION_TRANSFORM + i));
-            GL(glVertexAttribPointer(
-                VERTEX_ATTRIBUTE_LOCATION_TRANSFORM + i,
-                4,
-                GL_FLOAT,
-                false,
-                4 * 4 * sizeof(float),
-                (void*)(i * 4 * sizeof(float))));
-            GL(glVertexAttribDivisor(VERTEX_ATTRIBUTE_LOCATION_TRANSFORM + i, 1));
-        }
-        GL(glBindVertexArray(0));
-
-        scene->CreatedVAOs = true;
-    }
-}
-
-void ovrScene_DestroyVAOs(ovrScene* scene) {
-    if (scene->CreatedVAOs) {
-        ovrGeometry_DestroyVAO(&scene->Cube);
-
-        scene->CreatedVAOs = false;
-    }
 }
 
 // Returns a random float in the range [0, 1].
@@ -819,9 +669,8 @@ static float ovrScene_RandomFloat(ovrScene* scene) {
     return (*(float*)&rf) - 1.0f;
 }
 
-void ovrScene_Create(ovrScene* scene, bool useMultiview) {
+void ovrScene_Create(ovrScene* scene, int useMultiview) {
     ovrProgram_Create(&scene->Program, VERTEX_SHADER, FRAGMENT_SHADER, useMultiview);
-    ovrGeometry_CreateCube(&scene->Cube);
 
     // Create the instance transform attribute buffer.
     GL(glGenBuffers(1, &scene->InstanceTransformBuffer));
@@ -833,88 +682,19 @@ void ovrScene_Create(ovrScene* scene, bool useMultiview) {
     GL(glGenBuffers(1, &scene->SceneMatrices));
     GL(glBindBuffer(GL_UNIFORM_BUFFER, scene->SceneMatrices));
     GL(glBufferData(
-        GL_UNIFORM_BUFFER,
-        2 * sizeof(ovrMatrix4f) /* 2 view matrices */ +
+            GL_UNIFORM_BUFFER,
+            2 * sizeof(ovrMatrix4f) /* 2 view matrices */ +
             2 * sizeof(ovrMatrix4f) /* 2 projection matrices */,
-        NULL,
-        GL_STATIC_DRAW));
+            NULL,
+            GL_STATIC_DRAW));
     GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
-
-    // Setup random rotations.
-    for (int i = 0; i < NUM_ROTATIONS; i++) {
-        scene->Rotations[i].x = ovrScene_RandomFloat(scene);
-        scene->Rotations[i].y = ovrScene_RandomFloat(scene);
-        scene->Rotations[i].z = ovrScene_RandomFloat(scene);
-    }
-
-    // Setup random cube positions and rotations.
-    for (int i = 0; i < NUM_INSTANCES; i++) {
-        // Using volatile keeps the compiler from optimizing away multiple calls to
-        // ovrScene_RandomFloat().
-        volatile float rx, ry, rz;
-        for (;;) {
-            rx = (ovrScene_RandomFloat(scene) - 0.5f) * (50.0f + sqrt(NUM_INSTANCES));
-            ry = (ovrScene_RandomFloat(scene) - 0.5f) * (50.0f + sqrt(NUM_INSTANCES));
-            rz = (ovrScene_RandomFloat(scene) - 0.5f) * (50.0f + sqrt(NUM_INSTANCES));
-            // If too close to 0,0,0
-            if (fabsf(rx) < 4.0f && fabsf(ry) < 4.0f && fabsf(rz) < 4.0f) {
-                continue;
-            }
-            // Test for overlap with any of the existing cubes.
-            bool overlap = false;
-            for (int j = 0; j < i; j++) {
-                if (fabsf(rx - scene->CubePositions[j].x) < 4.0f &&
-                    fabsf(ry - scene->CubePositions[j].y) < 4.0f &&
-                    fabsf(rz - scene->CubePositions[j].z) < 4.0f) {
-                    overlap = true;
-                    break;
-                }
-            }
-            if (!overlap) {
-                break;
-            }
-        }
-
-        rx *= 0.1f;
-        ry *= 0.1f;
-        rz *= 0.1f;
-
-        // Insert into list sorted based on distance.
-        int insert = 0;
-        const float distSqr = rx * rx + ry * ry + rz * rz;
-        for (int j = i; j > 0; j--) {
-            const ovrVector3f* otherPos = &scene->CubePositions[j - 1];
-            const float otherDistSqr =
-                otherPos->x * otherPos->x + otherPos->y * otherPos->y + otherPos->z * otherPos->z;
-            if (distSqr > otherDistSqr) {
-                insert = j;
-                break;
-            }
-            scene->CubePositions[j] = scene->CubePositions[j - 1];
-            scene->CubeRotations[j] = scene->CubeRotations[j - 1];
-        }
-
-        scene->CubePositions[insert].x = rx;
-        scene->CubePositions[insert].y = ry;
-        scene->CubePositions[insert].z = rz;
-
-        scene->CubeRotations[insert] = (int)(ovrScene_RandomFloat(scene) * (NUM_ROTATIONS - 0.1f));
-    }
 
     scene->CreatedScene = true;
 
-#if !MULTI_THREADED
-    ovrScene_CreateVAOs(scene);
-#endif
 }
 
 void ovrScene_Destroy(ovrScene* scene) {
-#if !MULTI_THREADED
-    ovrScene_DestroyVAOs(scene);
-#endif
-
     ovrProgram_Destroy(&scene->Program);
-    ovrGeometry_Destroy(&scene->Cube);
     GL(glDeleteBuffers(1, &scene->InstanceTransformBuffer));
     GL(glDeleteBuffers(1, &scene->SceneMatrices));
     scene->CreatedScene = false;
@@ -958,18 +738,18 @@ void ovrRenderer_Clear(ovrRenderer* renderer) {
 }
 
 void
-ovrRenderer_Create(ovrRenderer* renderer, const ovrJava* java, const bool useMultiview) {
+ovrRenderer_Create(ovrRenderer* renderer, const ovrJava* java, const int useMultiview) {
     renderer->NumBuffers = useMultiview ? 1 : VRAPI_FRAME_LAYER_EYE_MAX;
 
     // Create the frame buffers.
     for (int eye = 0; eye < renderer->NumBuffers; eye++) {
         ovrFramebuffer_Create(
-            &renderer->FrameBuffer[eye],
-            useMultiview,
-            GL_SRGB8_ALPHA8,
-            vrapi_GetSystemPropertyInt(java, VRAPI_SYS_PROP_SUGGESTED_EYE_TEXTURE_WIDTH),
-            vrapi_GetSystemPropertyInt(java, VRAPI_SYS_PROP_SUGGESTED_EYE_TEXTURE_HEIGHT),
-            NUM_MULTI_SAMPLES);
+                &renderer->FrameBuffer[eye],
+                useMultiview,
+                GL_SRGB8_ALPHA8,
+                vrapi_GetSystemPropertyInt(java, VRAPI_SYS_PROP_SUGGESTED_EYE_TEXTURE_WIDTH),
+                vrapi_GetSystemPropertyInt(java, VRAPI_SYS_PROP_SUGGESTED_EYE_TEXTURE_HEIGHT),
+                NUM_MULTI_SAMPLES);
     }
 }
 
@@ -1014,7 +794,7 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
     ovrMatrix4f* modelMatrix = (ovrMatrix4f*)GL(glMapBufferRange(
             GL_ARRAY_BUFFER,
             0,
-             1 * sizeof(ovrMatrix4f),
+            1 * sizeof(ovrMatrix4f),
             GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
 
     for (int i = 0; i < NUM_INSTANCES; i++) {
@@ -1201,7 +981,7 @@ void ovrApp_HandleVrModeChanges(ovrApp* app) {
                 ALOGV("		vrapi_SetPerfThread( MAIN, %d )", app->MainThreadTid);
 
                 vrapi_SetPerfThread(
-                    app->Ovr, VRAPI_PERF_THREAD_TYPE_RENDERER, app->RenderThreadTid);
+                        app->Ovr, VRAPI_PERF_THREAD_TYPE_RENDERER, app->RenderThreadTid);
 
                 ALOGV("		vrapi_SetPerfThread( RENDERER, %d )", app->RenderThreadTid);
             }
@@ -1230,14 +1010,14 @@ ovrInputStateTrackedRemote rightTrackedRemoteState_new;
 ovrInputStateTrackedRemote leftTrackedRemoteState_old;
 ovrInputStateTrackedRemote leftTrackedRemoteState_new;
 
-ovrVector3f vecmul(ovrVector3f f, double speed);
+ovrVector3f vecmul(ovrVector3f f, float speed);
 
 ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1);
 
 ovrVector3f shipPosition = {0, 0, 0};
 
-bool fire_secondary = false;
-bool fire_primary = false;
+int fire_secondary = false;
+int fire_primary = false;
 
 void ovrApp_HandleInput(ovrApp * app )
 {
@@ -1278,31 +1058,31 @@ void ovrApp_HandleInput(ovrApp * app )
     //Right-hand specific stuff
     {
 
-            int rightJoyState = (rightTrackedRemoteState_new.Joystick.x > 0.7f ? 1 : 0);
-            if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x > 0.7f ? 1 : 0)) {
-                // pitch up
-                ALOGV("pitch up");
-            }
-            rightJoyState = (rightTrackedRemoteState_new.Joystick.x < -0.7f ? 1 : 0);
-            if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x < -0.7f ? 1 : 0)) {
-                // pitch down
-                ALOGV("pitch down");
+        int rightJoyState = (rightTrackedRemoteState_new.Joystick.x > 0.7f ? 1 : 0);
+        if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x > 0.7f ? 1 : 0)) {
+            // pitch up
+            ALOGV("pitch up");
+        }
+        rightJoyState = (rightTrackedRemoteState_new.Joystick.x < -0.7f ? 1 : 0);
+        if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x < -0.7f ? 1 : 0)) {
+            // pitch down
+            ALOGV("pitch down");
 
-            }
-            rightJoyState = (rightTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
-            if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
-                // yaw left
-                ALOGV("yaw left");
-            }
-            rightJoyState = (rightTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
-            if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
-                // yaw right
-                ALOGV("yaw right");
-            }
+        }
+        rightJoyState = (rightTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
+        if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
+            // yaw left
+            ALOGV("yaw left");
+        }
+        rightJoyState = (rightTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
+        if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
+            // yaw right
+            ALOGV("yaw right");
+        }
 
     }
 
-        //Left-hand specific stuff
+    //Left-hand specific stuff
     {
 
         int leftJoyState = (leftTrackedRemoteState_new.Joystick.x > 0.7f ? 1 : 0);
@@ -1327,7 +1107,7 @@ void ovrApp_HandleInput(ovrApp * app )
         ovrVector3f right = { mat.M[0][0], mat.M[1][0], mat.M[2][0] };
         ovrVector3f up = { mat.M[0][1], mat.M[1][1], mat.M[2][1] };
 
-        double speed = 0.5;
+        float speed = 0.5;
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // move forward
             ALOGV("move forward");
@@ -1368,7 +1148,7 @@ ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1) {
     return (ovrVector3f){f.x + f1.x, f.y + f1.y, f.z + f1.z};
 }
 
-ovrVector3f vecmul(ovrVector3f f, double speed) {
+ovrVector3f vecmul(ovrVector3f f, float speed) {
     return (ovrVector3f){f.x * speed, f.y* speed, f.z * speed};
 }
 

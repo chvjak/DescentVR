@@ -1,9 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
+#include <ctime>
+
+extern "C"
+{
 #include <unistd.h>
 #include <pthread.h>
+}
+
 #include <sys/prctl.h> // for prctl( PR_SET_NAME )
 #include <android/log.h>
 #include <android/native_window_jni.h> // for native window JNI
@@ -14,7 +16,13 @@
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
 
+#include "VrApi.h"
+#include "VrApi_Helpers.h"
+#include "VrApi_SystemUtils.h"
+
 #include "vr.h"
+extern "C"
+{
 #include "ai.h"
 #include "effects.h"
 #include "laser.h"
@@ -22,7 +30,6 @@
 #include "menu.h"
 #include "switch.h"
 #include "wall.h"
-
 #include <game.h>
 #include <gamefont.h>
 #include <bm.h>
@@ -32,6 +39,8 @@
 #include <palette.h>
 #include <timer.h>
 #include <3d.h>
+}
+
 #include <fcntl.h>
 #include <errno.h>
 
@@ -94,7 +103,7 @@ static void app_handle_cmd(struct android_app* app, int32_t cmd) {
 * event loop for receiving input events and doing other things.
 */
 extern AAssetManager* Asset_manager;
-extern int allowed_to_fire_missile(void);
+extern "C" int allowed_to_fire_missile(void);
 
 ovrVector3f cross_product(ovrVector3f *pF, ovrVector3f *pF1);
 
@@ -103,12 +112,11 @@ void android_main(struct android_app* app) {
     ALOGV("android_app_entry()");
     ALOGV("    android_main()");
 
-
     Asset_manager = app->activity->assetManager;
 
     ovrJava java;
     java.Vm = app->activity->vm;
-    (*java.Vm)->AttachCurrentThread(java.Vm, &java.Env, NULL);
+    java.Vm->AttachCurrentThread(&java.Env, NULL);
     java.ActivityObject = app->activity->clazz;
 
     // Note that AttachCurrentThread will reset the thread name.
@@ -273,10 +281,6 @@ void android_main(struct android_app* app) {
 
         appState.DisplayTime = predictedDisplayTime;
 
-        // Advance the simulation based on the elapsed time since start of loop till predicted
-        // display time.
-        ovrSimulation_Advance(&appState.Simulation, predictedDisplayTime - startTime);
-
         {
             // update game state
 
@@ -298,11 +302,10 @@ void android_main(struct android_app* app) {
 
             ovrVector3f up = { mat.M[1][0], mat.M[1][1], mat.M[1][2] };
             ovrVector3f forward =      { mat.M[2][0], mat.M[2][1], mat.M[2][2] };
-            //ovrVector3f right =      { mat.M[0][0], mat.M[0][1], mat.M[0][2] };
-            ovrVector3f right = cross_product(&forward, &up);
+            ovrVector3f right =      { mat.M[0][0], mat.M[0][1], mat.M[0][2] };
+            //ovrVector3f right = cross_product(&forward, &up);
 
-            // TODO: fix dependes on orieantation vs world e.g - if facing against original z - up-down flipped meaining wrong sign of rotation around x axis
-            // for alternative solution - wrong sign of rotation around z
+            // TODO: fix dependes on orieantation vs world e.g - if facing against original z - up-down flipped
             ConsoleObject->orient.fvec = (vms_vector){ fl2f(forward.x), fl2f(forward.y), fl2f(forward.z), };
             ConsoleObject->orient.uvec = (vms_vector){ fl2f(up.x), fl2f(up.y), fl2f(up.z), };
             ConsoleObject->orient.rvec = (vms_vector){ fl2f(right.x), fl2f(right.y), fl2f(right.z), };
@@ -372,12 +375,12 @@ void android_main(struct android_app* app) {
 
     vrapi_Shutdown();
 
-    (*java.Vm)->DetachCurrentThread(java.Vm);
+    java.Vm->DetachCurrentThread();
 }
 
 ovrVector3f cross_product(ovrVector3f *a, ovrVector3f *b) {
     ovrVector3f result = {a->y * b->z - a->z * b->y,
-                        -(a->x * b->z - a->z * b->x),
+                          -(a->x * b->z - a->z * b->x),
                           a->x * b->y - a->y * b->x};
     return result;
 }

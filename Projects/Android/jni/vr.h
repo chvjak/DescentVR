@@ -13,12 +13,13 @@ Copyright   :   Copyright (c) Facebook Technologies, LLC and its affiliates. All
 
 *************************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
+#include <ctime>
+extern "C"
+{
 #include <unistd.h>
 #include <pthread.h>
+}
+
 #include <sys/prctl.h> // for prctl( PR_SET_NAME )
 #include <android/log.h>
 #include <android/native_window_jni.h> // for native window JNI
@@ -41,6 +42,7 @@ Copyright   :   Copyright (c) Facebook Technologies, LLC and its affiliates. All
 #ifndef GL_TEXTURE_BORDER_COLOR
 #define GL_TEXTURE_BORDER_COLOR 0x1004
 #endif
+
 
 #if !defined(GL_EXT_multisampled_render_to_texture)
 typedef void(GL_APIENTRY* PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC)(
@@ -126,8 +128,8 @@ OpenGL-ES Utility Functions
 #endif
 
 typedef struct {
-    bool multi_view; // GL_OVR_multiview, GL_OVR_multiview2
-    bool EXT_texture_border_clamp; // GL_EXT_texture_border_clamp, GL_OES_texture_border_clamp
+    int multi_view; // GL_OVR_multiview, GL_OVR_multiview2
+    int EXT_texture_border_clamp; // GL_EXT_texture_border_clamp, GL_OES_texture_border_clamp
 } OpenGLExtensions_t;
 
 extern OpenGLExtensions_t glExtensions;
@@ -197,18 +199,22 @@ typedef struct {
     GLint Textures[MAX_PROGRAM_TEXTURES]; // Texture%i
 } ovrProgram;
 
+typedef enum {
+    UNIFORM_MODEL_MATRIX,
+    UNIFORM_VIEW_ID,
+    UNIFORM_SCENE_MATRICES,
+} index_enum;
+
+typedef enum {
+    UNIFORM_TYPE_VECTOR4,
+    UNIFORM_TYPE_MATRIX4X4,
+    UNIFORM_TYPE_INT,
+    UNIFORM_TYPE_BUFFER,
+} type_enum;
+
 typedef struct {
-    enum {
-        UNIFORM_MODEL_MATRIX,
-        UNIFORM_VIEW_ID,
-        UNIFORM_SCENE_MATRICES,
-    } index;
-    enum {
-        UNIFORM_TYPE_VECTOR4,
-        UNIFORM_TYPE_MATRIX4X4,
-        UNIFORM_TYPE_INT,
-        UNIFORM_TYPE_BUFFER,
-    } type;
+    index_enum index;
+    type_enum type;
     const char* name;
 } ovrUniform;
 
@@ -222,11 +228,11 @@ void ovrProgram_Clear(ovrProgram* program);
 
 static const char* programVersion = "#version 300 es\n";
 
-static bool ovrProgram_Create(
+static int ovrProgram_Create(
     ovrProgram* program,
     const char* vertexSource,
     const char* fragmentSource,
-    const bool useMultiview) ;
+    const int useMultiview) ;
 
 void ovrProgram_Destroy(ovrProgram* program);
 
@@ -300,16 +306,16 @@ typedef struct {
     int Multisamples;
     int TextureSwapChainLength;
     int TextureSwapChainIndex;
-    bool UseMultiview;
+    int UseMultiview;
     ovrTextureSwapChain* ColorTextureSwapChain;
     GLuint* DepthBuffers;
     GLuint* FrameBuffers;
 } ovrFramebuffer;
 
  void ovrFramebuffer_Clear(ovrFramebuffer* frameBuffer);
- bool ovrFramebuffer_Create(
+ int ovrFramebuffer_Create(
     ovrFramebuffer* frameBuffer,
-    const bool useMultiview,
+    const int useMultiview,
     const GLenum colorFormat,
     const int width,
     const int height,
@@ -380,8 +386,8 @@ ovrScene
 #define NUM_ROTATIONS 1
 
 typedef struct {
-    bool CreatedScene;
-    bool CreatedVAOs;
+    int CreatedScene;
+    int CreatedVAOs;
     unsigned int Random;
     ovrProgram Program;
     ovrGeometry Cube;
@@ -394,7 +400,7 @@ typedef struct {
 
 void ovrScene_Clear(ovrScene* scene);
 
-bool ovrScene_IsCreated(ovrScene* scene);
+int ovrScene_IsCreated(ovrScene* scene);
 
 void ovrScene_CreateVAOs(ovrScene* scene) ;
 void ovrScene_DestroyVAOs(ovrScene* scene) ;
@@ -402,7 +408,7 @@ void ovrScene_DestroyVAOs(ovrScene* scene) ;
 // Returns a random float in the range [0, 1].
 static float ovrScene_RandomFloat(ovrScene* scene) ;
 
-void ovrScene_Create(ovrScene* scene, bool useMultiview) ;
+void ovrScene_Create(ovrScene* scene, int useMultiview) ;
 
 void ovrScene_Destroy(ovrScene* scene);
 /*
@@ -436,7 +442,7 @@ typedef struct {
 
 void ovrRenderer_Clear(ovrRenderer* renderer);
 
-void ovrRenderer_Create(ovrRenderer* renderer, const ovrJava* java, const bool useMultiview) ;
+void ovrRenderer_Create(ovrRenderer* renderer, const ovrJava* java, const int useMultiview) ;
 
 void ovrRenderer_Destroy(ovrRenderer* renderer);
 
@@ -475,11 +481,11 @@ typedef struct {
     const ovrEgl* ShareEgl;
     pthread_t Thread;
     int Tid;
-    bool UseMultiview;
+    int UseMultiview;
     // Synchronization
-    bool Exit;
-    bool WorkAvailableFlag;
-    bool WorkDoneFlag;
+    int Exit;
+    int WorkAvailableFlag;
+    int WorkDoneFlag;
     pthread_cond_t WorkAvailableCondition;
     pthread_cond_t WorkDoneCondition;
     pthread_mutex_t Mutex;
@@ -624,7 +630,7 @@ void ovrRenderThread_Create(
     ovrRenderThread* renderThread,
     const ovrJava* java,
     const ovrEgl* shareEgl,
-    const bool useMultiview) {
+    const int useMultiview) {
     renderThread->JavaVm = java->Vm;
     renderThread->ActivityObject = java->ActivityObject;
     renderThread->ShareEgl = shareEgl;
@@ -721,7 +727,7 @@ typedef struct {
     ovrJava Java;
     ovrEgl Egl;
     ANativeWindow* NativeWindow;
-    bool Resumed;
+    int Resumed;
     ovrMobile* Ovr;
     ovrScene Scene;
     ovrSimulation Simulation;
@@ -732,13 +738,13 @@ typedef struct {
     int GpuLevel;
     int MainThreadTid;
     int RenderThreadTid;
-    bool GamePadBackButtonDown;
+    int GamePadBackButtonDown;
 #if MULTI_THREADED
     ovrRenderThread RenderThread;
 #else
     ovrRenderer Renderer;
 #endif
-    bool UseMultiview;
+    int UseMultiview;
 } ovrApp;
 
 void ovrApp_Clear(ovrApp* app) ;
@@ -750,7 +756,7 @@ void ovrApp_HandleInput(ovrApp* app) ;
 void ovrApp_HandleVrApiEvents(ovrApp* app);
 
 extern ovrVector3f shipPosition;
-extern bool fire_secondary;
-extern bool fire_primary;
+extern int fire_secondary;
+extern int fire_primary;
 
 #endif
