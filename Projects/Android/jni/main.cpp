@@ -6,6 +6,8 @@ extern "C"
 #include <pthread.h>
 }
 
+#include <glm/glm.hpp>
+
 #include <sys/prctl.h> // for prctl( PR_SET_NAME )
 #include <android/log.h>
 #include <android/native_window_jni.h> // for native window JNI

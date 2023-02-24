@@ -7,8 +7,11 @@ LOCAL_CFLAGS += -DANDROID_NDK -DDISABLE_IMPORTGL -DOGLES -DNASM -DNETWORK
 
 DESCENT_PATH := $(LOCAL_PATH)/../DescentCore/src/
 
-LOCAL_C_INCLUDES +=  $(DESCENT_PATH)/lib/ \
-                     $(LOCAL_PATH)/
+GLM_PATH := $(LOCAL_PATH)/../../../../
+
+LOCAL_C_INCLUDES += $(GLM_PATH) \
+                    $(DESCENT_PATH)/lib/ \
+                    $(LOCAL_PATH)/
 FILE_LIST := \
  $(wildcard $(DESCENT_PATH)2d/*.c) \
  $(wildcard $(DESCENT_PATH)2d/ogles/*.c) \
