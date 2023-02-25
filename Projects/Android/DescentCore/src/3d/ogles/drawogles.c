@@ -163,30 +163,6 @@ int g3_draw_sphere_ogles(g3s_point *pnt, fix rad) {
 
 extern GLint program_with_tex_id;
 
-static const struct
-{
-    float r, g, b, a;
-} colors[3] =
-        {
-                { 1.f, 0.f, 0.f, 1.f },
-                { 0.f, 1.f, 0.f, 1.f },
-                { 0.f, 0.f, 1.f, 1.f }
-        };
-
-void draw(GLuint program_id, int nv, GLfloat* vertices) {
-    GLint vpos_location = glGetAttribLocation(program_id, "vertexPosition");
-    glEnableVertexAttribArray(vpos_location);
-    (glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)vertices));
-
-    GLint vcol_location = glGetAttribLocation(program_id, "vertexColor");
-    glEnableVertexAttribArray(vcol_location);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(colors[0]), (void*)&colors);
-
-    glDrawArrays(GL_TRIANGLE_FAN, 0, nv);
-
-    glDisableVertexAttribArray(vpos_location);
-}
-
 void draw_with_texture(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* colors, GLint texture_slot_id) {
     //glUseProgram(program_with_tex_id); // TODO: generalize
     glBindTexture(GL_TEXTURE_2D, texture_slot_id);

@@ -7,6 +7,8 @@ extern "C"
 }
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/norm.hpp>
 
 #include <sys/prctl.h> // for prctl( PR_SET_NAME )
 #include <android/log.h>
@@ -23,8 +25,10 @@ extern "C"
 #include "VrApi_SystemUtils.h"
 
 #include "vr.h"
+
 extern "C"
 {
+#include "globvars.h"
 #include "ai.h"
 #include "effects.h"
 #include "laser.h"
@@ -108,6 +112,9 @@ extern AAssetManager* Asset_manager;
 extern "C" int allowed_to_fire_missile(void);
 
 ovrVector3f cross_product(ovrVector3f *pF, ovrVector3f *pF1);
+ovrVector3f up;
+ovrVector3f forward;
+ovrVector3f right;
 
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
@@ -302,9 +309,9 @@ void android_main(struct android_app* app) {
 
             ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
 
-            ovrVector3f up = { mat.M[1][0], mat.M[1][1], mat.M[1][2] };
-            ovrVector3f forward =      { mat.M[2][0], mat.M[2][1], mat.M[2][2] };
-            ovrVector3f right =      { mat.M[0][0], mat.M[0][1], mat.M[0][2] };
+            up = { mat.M[1][0], mat.M[1][1], mat.M[1][2] };
+            forward =      { mat.M[2][0], mat.M[2][1], mat.M[2][2] };
+            right =      { mat.M[0][0], mat.M[0][1], mat.M[0][2] };
             //ovrVector3f right = cross_product(&forward, &up);
 
             // TODO: fix dependes on orieantation vs world e.g - if facing against original z - up-down flipped
@@ -387,3 +394,63 @@ ovrVector3f cross_product(ovrVector3f *a, ovrVector3f *b) {
     return result;
 }
 
+extern "C"
+{
+void draw_with_texture(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* colors, GLint texture_slot_id);
+bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm) {
+    g3s_point pnt;
+    fix w, h;
+
+    w = fixmul(width, Matrix_scale.x) * 2;
+    h = fixmul(height, Matrix_scale.y) * 2;
+
+    GLfloat x0f, y0f, x1f, y1f, zf;
+
+    // Calculate OGLES coords
+    x0f = f2fl(pos->x - w / 2);
+    y0f = f2fl(pos->y - h / 2);
+    x1f = f2fl(pos->x + w / 2);
+    y1f = f2fl(pos->y + h / 2);
+    zf = -f2fl(pos->z);
+
+    // Looks like if cameraFront matches world-z - it's fine, than when it is 45 degree off - bitmap is perpendicular to what is needed and when it is 90 degree it is correct again
+    // looks like the angle of compensation rotation grows at x2 rate
+
+    // rotate the bitmap perpendicular to cameraFront
+    glm::vec3 cameraFront(forward.x, forward.y, forward.z);
+    glm::vec3 pos1(f2fl(pos->x), f2fl(pos->y), -f2fl(pos->z));
+    glm::vec3 originalNormal(0.0f, 0.0f, 1.0f); // TODO: calculate normal, deal with 180 degree rotation
+    glm::vec3 axis = glm::cross(originalNormal, cameraFront);
+    float norm1 = glm::l2Norm(cameraFront);
+    float norm2 = glm::l2Norm(originalNormal); // TODO: check norm
+    float angle = acos(glm::dot(originalNormal, cameraFront) / norm1 / norm2); // TODO: try bigger divisor, like x8, x16
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, pos1);
+    model = glm::rotate(model, angle, axis);
+    model = glm::translate(model, -pos1);
+
+    glm::vec4 verts[] = { glm::vec4(x1f, y0f, zf, 1), glm::vec4(x0f, y0f, zf, 1), glm::vec4(x0f, y1f, zf, 1), glm::vec4(x1f, y1f, zf, 1) };
+    GLfloat vertices[4];
+
+    for(int i = 0; i < 4; i++)
+    {
+        verts[i] = model * verts[i] ;
+
+        vertices[i * 3] = verts[i].x;
+        vertices[i * 3 + 1] = verts[i].y;
+        vertices[i * 3 + 2] = verts[i].z;
+    }
+
+    // Draw
+    GLfloat texCoords[] = { 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f };
+    GLfloat colors[] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, };
+
+    ogles_bm_bind_teximage_2d(bm);
+    draw_with_texture(4, vertices, texCoords, colors, bm->bm_ogles_tex_id);
+
+    return 0;
+
+}
+
+}
