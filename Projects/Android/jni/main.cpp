@@ -307,9 +307,9 @@ void android_main(struct android_app* app) {
 
             ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
 
-            glm::vec3 cameraFront(mat.M[2][0], mat.M[2][1], mat.M[2][2]);
-            glm::vec3 cameraUp(mat.M[1][0], mat.M[1][1], mat.M[1][2]);
-            glm::vec3 cameraRight(mat.M[0][0], mat.M[0][1], mat.M[0][2]);
+            glm::vec3 cameraFront(mat.M[0][2], mat.M[1][2], mat.M[2][2]);
+            glm::vec3 cameraUp(mat.M[0][1], mat.M[1][1], mat.M[2][1]);
+            glm::vec3 cameraRight(mat.M[0][0], mat.M[1][0], mat.M[2][0]);
 
             forward = {cameraFront.x, cameraFront.y, cameraFront.z};
             up = {cameraUp.x, cameraUp.y, cameraUp.z};
