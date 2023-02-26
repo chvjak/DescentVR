@@ -112,9 +112,7 @@ extern AAssetManager* Asset_manager;
 extern "C" int allowed_to_fire_missile(void);
 
 ovrVector3f cross_product(ovrVector3f *pF, ovrVector3f *pF1);
-ovrVector3f up;
-ovrVector3f forward;
-ovrVector3f right;
+ovrVector3f up, forward, right;
 
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
@@ -313,7 +311,13 @@ void android_main(struct android_app* app) {
             glm::vec3 cameraUp(mat.M[1][0], mat.M[1][1], mat.M[1][2]);
             glm::vec3 cameraRight(mat.M[0][0], mat.M[0][1], mat.M[0][2]);
 
-            //glm::vec3 cameraRight = glm::cross(cameraNegFront, cameraNegUp);
+            forward = {cameraFront.x, cameraFront.y, cameraFront.z};
+            up = {cameraUp.x, cameraUp.y, cameraUp.z};
+            right = {cameraRight.x, cameraRight.y, cameraRight.z};
+
+            // DEBUG:
+            auto view = glm::lookAt(glm::vec3(0),cameraFront, cameraUp);
+            auto view1 = glm::lookAt(glm::vec3(0),-cameraFront, cameraUp); // view1 matches mat, BUT view doesn't
 
             ConsoleObject->orient.fvec = { fl2f(cameraFront.x), fl2f(cameraFront.y), fl2f(cameraFront.z), };
             ConsoleObject->orient.uvec = { fl2f(cameraUp.x), fl2f(cameraUp.y), fl2f(cameraUp.z), };

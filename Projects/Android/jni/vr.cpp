@@ -1019,6 +1019,8 @@ ovrVector3f shipPosition = {0, 0, 0};
 int fire_secondary = false;
 int fire_primary = false;
 
+extern ovrVector3f up, forward, right;
+
 void ovrApp_HandleInput(ovrApp * app )
 {
     for ( int i = 0; ; i++ ) {
@@ -1103,21 +1105,17 @@ void ovrApp_HandleInput(ovrApp * app )
 
         ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
 
-        ovrVector3f shipOrientation = { mat.M[0][2], mat.M[1][2], mat.M[2][2] };
-        ovrVector3f right = { mat.M[0][0], mat.M[1][0], mat.M[2][0] };
-        ovrVector3f up = { mat.M[0][1], mat.M[1][1], mat.M[2][1] };
-
         float speed = 0.5;
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // move forward
             ALOGV("move forward");
-            shipPosition = vecadd(shipPosition, vecmul(shipOrientation, speed));
+            shipPosition = vecadd(shipPosition, vecmul(forward, speed));
         }
         leftJoyState = (leftTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
             // move backward
             ALOGV("move backward");
-            shipPosition = vecadd(shipPosition, vecmul(shipOrientation, -speed));
+            shipPosition = vecadd(shipPosition, vecmul(forward, -speed));
         }
     }
 
