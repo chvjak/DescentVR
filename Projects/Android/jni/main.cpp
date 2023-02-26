@@ -301,8 +301,14 @@ void android_main(struct android_app* app) {
             triggers_frame_process();
             update_object_seg(ConsoleObject);
 
-            // TODO: switch to c++ otherwise can't use op() overloads
             // TODO: add pos offset from tracking
+            /*
+             * TODO: figure out orientation
+             *  1. glm::lookAt(glm::vec3(0),cameraFront, cameraUp) should result in mat
+             *  2. ship movement should work correctly
+             *  3. ship fire should work correctly
+             *  4. figure out axis orientation in oculus, ogl and decent, currently we think oculus=ogl, descent.z = -ogl.z
+            */
             ConsoleObject->pos = (vms_vector) {fl2f(shipPosition.x), fl2f(shipPosition.y), fl2f(-shipPosition.z)};
 
             ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
@@ -318,6 +324,12 @@ void android_main(struct android_app* app) {
             // DEBUG:
             auto view = glm::lookAt(glm::vec3(0),cameraFront, cameraUp);
             auto view1 = glm::lookAt(glm::vec3(0),-cameraFront, cameraUp); // view1 matches mat, BUT view doesn't
+
+            glm::vec3 cameraFront1(mat.M[2][0], mat.M[2][1], mat.M[2][2]);
+            glm::vec3 cameraUp1(mat.M[1][0], mat.M[1][1], mat.M[1][2]);
+
+            auto view_ = glm::lookAt(glm::vec3(0),cameraFront1, cameraUp1);  // has same effect as above but result is transposed
+            auto view1_ = glm::lookAt(glm::vec3(0),-cameraFront1, cameraUp1);
 
             ConsoleObject->orient.fvec = { fl2f(cameraFront.x), fl2f(cameraFront.y), fl2f(cameraFront.z), };
             ConsoleObject->orient.uvec = { fl2f(cameraUp.x), fl2f(cameraUp.y), fl2f(cameraUp.z), };
