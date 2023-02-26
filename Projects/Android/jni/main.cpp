@@ -313,7 +313,7 @@ void android_main(struct android_app* app) {
 
             ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
 
-            glm::vec3 cameraFront(mat.M[0][2], mat.M[1][2], mat.M[2][2]);
+            glm::vec3 cameraFront(-mat.M[0][2], -mat.M[1][2], -mat.M[2][2]);
             glm::vec3 cameraUp(mat.M[0][1], mat.M[1][1], mat.M[2][1]);
             glm::vec3 cameraRight(mat.M[0][0], mat.M[1][0], mat.M[2][0]);
 
@@ -321,19 +321,14 @@ void android_main(struct android_app* app) {
             up = {cameraUp.x, cameraUp.y, cameraUp.z};
             right = {cameraRight.x, cameraRight.y, cameraRight.z};
 
-            // DEBUG:
-            auto view = glm::lookAt(glm::vec3(0),cameraFront, cameraUp);
-            auto view1 = glm::lookAt(glm::vec3(0),-cameraFront, cameraUp); // view1 matches mat, BUT view doesn't
 
-            glm::vec3 cameraFront1(mat.M[2][0], mat.M[2][1], mat.M[2][2]);
-            glm::vec3 cameraUp1(mat.M[1][0], mat.M[1][1], mat.M[1][2]);
+            glm::vec3 cameraNegFront(-mat.M[0][2], -mat.M[1][2], mat.M[2][2]); // -z
+            glm::vec3 cameraNegUp(mat.M[0][1], mat.M[1][1], -mat.M[2][1]); // -z
+            glm::vec3 cameraNegRight = -glm::cross(cameraNegFront, cameraNegUp);
 
-            auto view_ = glm::lookAt(glm::vec3(0),cameraFront1, cameraUp1);  // has same effect as above but result is transposed
-            auto view1_ = glm::lookAt(glm::vec3(0),-cameraFront1, cameraUp1);
-
-            ConsoleObject->orient.fvec = { fl2f(cameraFront.x), fl2f(cameraFront.y), fl2f(cameraFront.z), };
-            ConsoleObject->orient.uvec = { fl2f(cameraUp.x), fl2f(cameraUp.y), fl2f(cameraUp.z), };
-            ConsoleObject->orient.rvec = { fl2f(cameraRight.x), fl2f(cameraRight.y), fl2f(cameraRight.z), };
+            ConsoleObject->orient.fvec = { fl2f(cameraNegFront.x), fl2f(cameraNegFront.y), fl2f(cameraNegFront.z), };
+            ConsoleObject->orient.uvec = { fl2f(cameraNegUp.x), fl2f(cameraNegUp.y), fl2f(cameraNegUp.z), };
+            ConsoleObject->orient.rvec = { fl2f(cameraNegRight.x), fl2f(cameraNegRight.y), fl2f(cameraNegRight.z), };
 
             if (fire_secondary)
             {
@@ -432,27 +427,31 @@ bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm)
     // Looks like if cameraFront matches world-z - it's fine, than when it is 45 degree off - bitmap is perpendicular to what is needed and when it is 90 degree it is correct again
     // looks like the angle of compensation rotation grows at x2 rate
 
-    // rotate the bitmap perpendicular to cameraFront
     glm::vec3 cameraFront(forward.x, forward.y, forward.z);
     glm::vec3 pos1(f2fl(pos->x), f2fl(pos->y), -f2fl(pos->z));
     glm::vec3 originalNormal(0.0f, 0.0f, 1.0f); // TODO: calculate normal, deal with 180 degree rotation
-    glm::vec3 axis = glm::cross(originalNormal, cameraFront);
-    axis /= glm::l2Norm(axis);
-
     float norm1 = glm::l2Norm(cameraFront);
     float norm2 = glm::l2Norm(originalNormal);
     float angle = acos(glm::dot(originalNormal, cameraFront) / norm1 / norm2);
 
-    glm::vec3 verts[] = { glm::vec3(x1f, y0f, zf), glm::vec3(x0f, y0f, zf), glm::vec3(x0f, y1f, zf), glm::vec3(x1f, y1f, zf) };
+    glm::vec3 axis = glm::cross(originalNormal, cameraFront);
+    axis /= glm::l2Norm(axis);
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, pos1);
+    model = glm::rotate(model, angle, axis);
+    model = glm::translate(model, -pos1);
+
+    glm::vec4 verts[] = { glm::vec4(x1f, y0f, zf, 1), glm::vec4(x0f, y0f, zf, 1), glm::vec4(x0f, y1f, zf, 1), glm::vec4(x1f, y1f, zf, 1) };
     GLfloat vertices[4];
 
     for(int i = 0; i < 4; i++)
     {
-        glm::vec3 res = glm::rotate(verts[i], angle, pos1 + axis);
+        verts[i] = model * verts[i] ;
 
-        vertices[i * 3] = res.x;
-        vertices[i * 3 + 1] = res.y;
-        vertices[i * 3 + 2] = res.z;
+        vertices[i * 3] = verts[i].x;
+        vertices[i * 3 + 1] = verts[i].y;
+        vertices[i * 3 + 2] = verts[i].z;
     }
 
     // Draw

@@ -1106,13 +1106,13 @@ void ovrApp_HandleInput(ovrApp * app )
         ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
 
         float speed = 0.5;
-        if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
+        if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
             // move forward
             ALOGV("move forward");
             shipPosition = vecadd(shipPosition, vecmul(forward, speed));
         }
         leftJoyState = (leftTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
-        if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
+        if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // move backward
             ALOGV("move backward");
             shipPosition = vecadd(shipPosition, vecmul(forward, -speed));
