@@ -258,7 +258,7 @@ bool g3_draw_polygon_model(void *model_ptr, grs_bitmap **model_bitmaps, vms_angv
 			g3s_uvl *uvl_list;
 
 			Assert(nv < MAX_POINTS_PER_POLY);
-			if (g3_check_normal_facing(vp(p + 4), vp(p + 16)) > 0) {
+			if (1 || g3_check_normal_facing(vp(p + 4), vp(p + 16)) > 0) {
 				int i;
 				fix light;
 

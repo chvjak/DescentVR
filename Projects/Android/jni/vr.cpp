@@ -882,14 +882,15 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
             GL(glUniform1i(scene->Program.UniformLocation[UNIFORM_VIEW_ID], eye)); // projection?
         }
 
-        //GL(glEnable(GL_SCISSOR_TEST));
-        //GL(glDepthMask(GL_TRUE));
-        //GL(glEnable(GL_DEPTH_TEST));
-        //GL(glDepthFunc(GL_LEQUAL));
+        GL(glEnable(GL_SCISSOR_TEST));
+        GL(glDepthMask(GL_TRUE));
+        GL(glEnable(GL_DEPTH_TEST));
+        GL(glDepthFunc(GL_LEQUAL));
         //GL(glEnable(GL_CULL_FACE));
         //GL(glCullFace(GL_BACK));
+
         GL(glViewport(0, 0, frameBuffer->Width, frameBuffer->Height));
-        //GL(glScissor(0, 0, frameBuffer->Width, frameBuffer->Height));
+        GL(glScissor(0, 0, frameBuffer->Width, frameBuffer->Height));
         GL(glClearColor(0.125f, 0.0f, 0.125f, 1.0f));
         GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
