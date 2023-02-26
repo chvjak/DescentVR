@@ -309,15 +309,15 @@ void android_main(struct android_app* app) {
 
             ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
 
-            up = { mat.M[1][0], mat.M[1][1], mat.M[1][2] };
-            forward =      { mat.M[2][0], mat.M[2][1], mat.M[2][2] };
-            right =      { mat.M[0][0], mat.M[0][1], mat.M[0][2] };
-            //ovrVector3f right = cross_product(&forward, &up);
+            glm::vec3 cameraFront(mat.M[2][0], mat.M[2][1], mat.M[2][2]);
+            glm::vec3 cameraUp(mat.M[1][0], mat.M[1][1], mat.M[1][2]);
+            glm::vec3 cameraRight(mat.M[0][0], mat.M[0][1], mat.M[0][2]);
 
-            // TODO: fix dependes on orieantation vs world e.g - if facing against original z - up-down flipped
-            ConsoleObject->orient.fvec = (vms_vector){ fl2f(forward.x), fl2f(forward.y), fl2f(forward.z), };
-            ConsoleObject->orient.uvec = (vms_vector){ fl2f(up.x), fl2f(up.y), fl2f(up.z), };
-            ConsoleObject->orient.rvec = (vms_vector){ fl2f(right.x), fl2f(right.y), fl2f(right.z), };
+            //glm::vec3 cameraRight = glm::cross(cameraNegFront, cameraNegUp);
+
+            ConsoleObject->orient.fvec = { fl2f(cameraFront.x), fl2f(cameraFront.y), fl2f(cameraFront.z), };
+            ConsoleObject->orient.uvec = { fl2f(cameraUp.x), fl2f(cameraUp.y), fl2f(cameraUp.z), };
+            ConsoleObject->orient.rvec = { fl2f(cameraRight.x), fl2f(cameraRight.y), fl2f(cameraRight.z), };
 
             if (fire_secondary)
             {
