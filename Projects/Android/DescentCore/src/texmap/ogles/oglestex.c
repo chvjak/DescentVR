@@ -32,7 +32,7 @@ void ogles_clear_canvas_textures() {
 	//glDeleteTextures(NUM_OGL_TEXTURES, grd_curcanv->cv_ogles_textures);
 }
 
-void ogles_bm_bind_teximage_2d(grs_bitmap* bm) {
+void ogles_bm_bind_teximage_2d_with_max_alpha(grs_bitmap* bm, ubyte max_alpha) {
 	GLubyte* image_data;
 	ubyte* data, * sbits, * dbits;
 	int i;
@@ -60,7 +60,7 @@ void ogles_bm_bind_teximage_2d(grs_bitmap* bm) {
 			image_data[i * 4 + 1] = gr_current_pal[data[i] * 3 + 1] * 4;
 			image_data[i * 4 + 2] = gr_current_pal[data[i] * 3 + 2] * 4;
 
-			image_data[i * 4 + 3] = data[i] == TRANSPARENCY_COLOR ? 0 : 255;
+			image_data[i * 4 + 3] = data[i] == TRANSPARENCY_COLOR ? 0 : max_alpha;
 		}
 		if (bm->bm_flags & BM_FLAG_RLE) {
 			free(data);
@@ -69,8 +69,17 @@ void ogles_bm_bind_teximage_2d(grs_bitmap* bm) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		// set texture filtering parameters
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		if (max_alpha == 128) {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		}
+		else
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		}
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bm->bm_w, bm->bm_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
 		glGenerateMipmap(GL_TEXTURE_2D); // this is critical part
@@ -80,6 +89,10 @@ void ogles_bm_bind_teximage_2d(grs_bitmap* bm) {
 	else {
 		glBindTexture(GL_TEXTURE_2D, bm->bm_ogles_tex_id);
 	}
+}
+
+void ogles_bm_bind_teximage_2d(grs_bitmap* bm) {
+	ogles_bm_bind_teximage_2d_with_max_alpha(bm, 255);
 }
 
 #endif

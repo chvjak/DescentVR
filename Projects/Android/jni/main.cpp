@@ -321,7 +321,6 @@ void android_main(struct android_app* app) {
             up = {cameraUp.x, cameraUp.y, cameraUp.z};
             right = {cameraRight.x, cameraRight.y, cameraRight.z};
 
-
             glm::vec3 cameraNegFront(-mat.M[0][2], -mat.M[1][2], mat.M[2][2]); // -z
             glm::vec3 cameraNegUp(mat.M[0][1], mat.M[1][1], -mat.M[2][1]); // -z
             glm::vec3 cameraNegRight = -glm::cross(cameraNegFront, cameraNegUp);
@@ -408,6 +407,7 @@ ovrVector3f cross_product(ovrVector3f *a, ovrVector3f *b) {
 extern "C"
 {
 void draw_with_texture(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* colors, GLint texture_slot_id);
+void ogles_bm_bind_teximage_2d_with_max_alpha(grs_bitmap* bm, ubyte max_alpha);
 bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm) {
     g3s_point pnt;
     fix w, h;
@@ -458,7 +458,7 @@ bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm)
     GLfloat texCoords[] = { 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f };
     GLfloat colors[] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, };
 
-    ogles_bm_bind_teximage_2d(bm);
+    ogles_bm_bind_teximage_2d_with_max_alpha(bm, 128);
     draw_with_texture(4, vertices, texCoords, colors, bm->bm_ogles_tex_id);
 
     return 0;
