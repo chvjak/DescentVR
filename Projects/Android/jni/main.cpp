@@ -190,7 +190,7 @@ void android_main(struct android_app* app) {
         init_game();
         set_detail_level_parameters(NUM_DETAIL_LEVELS - 2); // #define	NUM_DETAIL_LEVELS	6 , //	Note: Highest detail level (detail_level == NUM_DETAIL_LEVELS-1) is custom detail level.
         load_mission(0);
-        StartNewGame(1); // Start on level 1
+        StartNewGame(7); // Start on level 1
         gr_palette_apply(gr_palette);
 
         timer_init();
@@ -301,14 +301,6 @@ void android_main(struct android_app* app) {
             triggers_frame_process();
             update_object_seg(ConsoleObject);
 
-            // TODO: add pos offset from tracking
-            /*
-             * TODO: figure out orientation
-             *  1. glm::lookAt(glm::vec3(0),cameraFront, cameraUp) should result in mat
-             *  2. ship movement should work correctly
-             *  3. ship fire should work correctly
-             *  4. figure out axis orientation in oculus, ogl and decent, currently we think oculus=ogl, descent.z = -ogl.z
-            */
             ConsoleObject->pos = (vms_vector) {fl2f(shipPosition.x), fl2f(shipPosition.y), fl2f(-shipPosition.z)};
 
             ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);

@@ -759,26 +759,6 @@ void ovrRenderer_Destroy(ovrRenderer* renderer) {
     }
 }
 
-static const struct
-{
-    float x, y, z;
-} vertices[3] =
-        {
-                {  -127.f, -127.f, -300.f },
-                { 127.f, -127.f, -300.f },
-                {   0.f,  127.f, -300.f}
-        };
-
-static const struct
-{
-    float r, g, b, a;
-} colors[3] =
-        {
-                { 1.f, 0.f, 0.f, 1.f },
-                { 0.f, 1.f, 0.f, 1.f },
-                { 0.f, 0.f, 1.f, 1.f }
-        };
-
 ovrLayerProjection2 ovrRenderer_RenderFrame(
         ovrRenderer* renderer,
         const ovrJava* java,
