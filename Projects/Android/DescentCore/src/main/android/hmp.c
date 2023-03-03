@@ -13,15 +13,16 @@ void hmp_init() {
 
 }
 
+char *appClass = "com/chvjak/descentvr/MainActivity";
 void hmp_stop(hmp_file *hmp) {
 	JNIEnv *env;
 	jclass clazz;
 	jmethodID method;
 
 	(*jvm)->GetEnv(jvm, (void**)&env, JNI_VERSION_1_6);
-	clazz = (*env)->FindClass(env, "tuchsen/descent/DescentActivity");
-	method = (*env)->GetMethodID(env, clazz, "stopMidi", "()V");
-	(*env)->CallVoidMethod(env, Activity, method);
+	clazz = (*env)->FindClass(env, appClass);
+	//method = (*env)->GetMethodID(env, clazz, "stopMidi", "()V");
+	//(*env)->CallVoidMethod(env, Activity, method);
 	(*env)->DeleteLocalRef(env, clazz);
 }
 
@@ -31,9 +32,9 @@ void hmp_setvolume(hmp_file *hmp, int volume) {
 	jmethodID method;
 
 	(*jvm)->GetEnv(jvm, (void**)&env, JNI_VERSION_1_6);
-	clazz = (*env)->FindClass(env, "tuchsen/descent/DescentActivity");
-	method = (*env)->GetMethodID(env, clazz, "setMidiVolume", "(F)V");
-	(*env)->CallVoidMethod(env, Activity, method, (jfloat)volume / 128.0f);
+	clazz = (*env)->FindClass(env, appClass);
+	//method = (*env)->GetMethodID(env, clazz, "setMidiVolume", "(F)V");
+	//(*env)->CallVoidMethod(env, Activity, method, (jfloat)volume / 128.0f);
 	(*env)->DeleteLocalRef(env, clazz);
 }
 
@@ -47,17 +48,16 @@ int hmp_play(hmp_file *hmp, bool loop) {
 	jmethodID method;
 	jstring jpath;
 
-	sprintf(path, "%s/%s", Cache_path, "tmp.mid");
 	hmp2mid(hmp, &midbuf, &midlen);
-	file = fopen(path, "wb");
+	file = fopen("/sdcard/DescentVR/tmp.mid", "wb");
 	fwrite(midbuf, 1, midlen, file);
 	fclose(file);
 	free(midbuf);
 	(*jvm)->GetEnv(jvm, (void**)&env, JNI_VERSION_1_6);
 	jpath = (*env)->NewStringUTF(env, path);
-	clazz = (*env)->FindClass(env, "tuchsen/descent/DescentActivity");
-	method = (*env)->GetMethodID(env, clazz, "playMidi", "(Ljava/lang/String;Z)V");
-	(*env)->CallVoidMethod(env, Activity, method, jpath, loop);
+	clazz = (*env)->FindClass(env, appClass);
+	//method = (*env)->GetMethodID(env, clazz, "playMidi", "(Ljava/lang/String;Z)V");
+	//(*env)->CallVoidMethod(env, Activity, method, jpath, loop);
 	(*env)->DeleteLocalRef(env, clazz);
 	(*env)->DeleteLocalRef(env, jpath);
 	return 0;

@@ -199,6 +199,7 @@ void android_main(struct android_app* app) {
 
         Players[Player_num].flags |= PLAYER_FLAGS_INVULNERABLE;
 
+        digi_init();
     }
 
     while (app->destroyRequested == 0) {
