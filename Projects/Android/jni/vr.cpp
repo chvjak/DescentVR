@@ -1038,29 +1038,31 @@ void ovrApp_HandleInput(ovrApp * app )
     ovrInputStateTrackedRemote *offHandTrackedRemoteState = &leftTrackedRemoteState_new;
     ovrInputStateTrackedRemote *offHandTrackedRemoteStateOld = &leftTrackedRemoteState_old;
 
+    float speed = 0.5;
+
     //Right-hand specific stuff
     {
 
         int rightJoyState = (rightTrackedRemoteState_new.Joystick.x > 0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x > 0.7f ? 1 : 0)) {
-            // pitch up
-            ALOGV("pitch up");
+            // strafe right
+            shipPosition = vecadd(shipPosition, vecmul(right, speed));
         }
         rightJoyState = (rightTrackedRemoteState_new.Joystick.x < -0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x < -0.7f ? 1 : 0)) {
-            // pitch down
-            ALOGV("pitch down");
-
+            // strafe left
+            shipPosition = vecadd(shipPosition, vecmul(right, -speed));
         }
+
         rightJoyState = (rightTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
-            // yaw left
-            ALOGV("yaw left");
+            // strafe up
+            shipPosition = vecadd(shipPosition, vecmul(up, speed));
         }
         rightJoyState = (rightTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
-            // yaw right
-            ALOGV("yaw right");
+            // strafe down
+            shipPosition = vecadd(shipPosition, vecmul(up, -speed));
         }
 
     }
@@ -1079,20 +1081,15 @@ void ovrApp_HandleInput(ovrApp * app )
             // roll right
             ALOGV("roll right");
         }
-        leftJoyState = (leftTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
 
-        const double predictedDisplayTime = vrapi_GetPredictedDisplayTime(app->Ovr, app->FrameIndex);
-        const ovrTracking2 tracking = vrapi_GetPredictedTracking2(app->Ovr, predictedDisplayTime);
-
-        ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
-
-        float speed = 0.5;
+        leftJoyState = (leftTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
             // move forward
             ALOGV("move forward");
             shipPosition = vecadd(shipPosition, vecmul(forward, speed));
         }
-        leftJoyState = (leftTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
+
+        leftJoyState = (leftTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // move backward
             ALOGV("move backward");
