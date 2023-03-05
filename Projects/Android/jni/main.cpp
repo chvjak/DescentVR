@@ -148,6 +148,24 @@ void StartMusic(struct android_app* app)
     (*env)->CallVoidMethod(java.ActivityObject, method, jpath, true);
 }
 
+
+void CheckMidi(struct android_app* app)
+{
+    ovrJava java;
+
+    Asset_manager = app->activity->assetManager;
+
+    java.Vm = app->activity->vm;
+    java.Vm->AttachCurrentThread(&java.Env, NULL);
+    java.ActivityObject = app->activity->clazz;
+
+    auto env = &java.Env;
+    jclass objClass = (*env)->GetObjectClass(app->activity->clazz);
+    jmethodID method = (*env)->GetMethodID(objClass, "checkMidiPlayback", "()V");
+
+    (*env)->CallVoidMethod(java.ActivityObject, method);
+}
+
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
     ALOGV("android_app_entry()");

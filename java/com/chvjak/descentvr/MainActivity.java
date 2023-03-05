@@ -1,15 +1,17 @@
 // Copyright (c) Facebook Technologies, LLC and its affiliates. All Rights reserved.
 package com.chvjak.descentvr;
 
+import android.content.Context;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.midi.MidiDeviceInfo;
+import android.media.midi.MidiManager;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.IOException;
-
-
-import android.util.Log;
 
 /**
  * When using NativeActivity, we currently need to handle loading of dependent shared libraries
@@ -76,6 +78,31 @@ public class MainActivity extends android.app.NativeActivity {
   @SuppressWarnings("unused")
   private void setMidiVolume(float volume) {
     mediaPlayer.setVolume(volume, volume);
+  }
+
+
+  private void checkMidiPlayback() {
+    AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+    if (audioManager == null) {
+      Log.d("MIDI", "AudioManager not available.");
+      return;
+    }
+
+    MidiManager midiManager = (MidiManager) getSystemService(Context.MIDI_SERVICE);
+    if (midiManager == null) {
+      Log.d("MIDI", "MidiManager not available.");
+      return;
+    }
+
+    MidiDeviceInfo[] infos = midiManager.getDevices();
+    if (infos.length == 0) {
+      Log.d("MIDI", "No MIDI devices found.");
+      return;
+    }
+
+    for (MidiDeviceInfo info : infos) {
+      Log.d("MIDI", "MIDI device found: " + info.toString());
+    }
   }
 
 }
