@@ -1,6 +1,16 @@
 // Copyright (c) Facebook Technologies, LLC and its affiliates. All Rights reserved.
 package com.chvjak.descentvr;
 
+import android.media.MediaPlayer;
+
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+
+import android.util.Log;
+
 /**
  * When using NativeActivity, we currently need to handle loading of dependent shared libraries
  * manually before a shared library that depends on them is loaded, since there is not currently a
@@ -25,4 +35,47 @@ public class MainActivity extends android.app.NativeActivity {
     System.loadLibrary("vrapi");
     System.loadLibrary("descentvr");
   }
+
+  private final static  MediaPlayer mediaPlayer = new MediaPlayer();
+  @SuppressWarnings("unused")
+  private void playMidi(String path, boolean looping) {
+    File file = new File(path);
+    Log.d("MIDI", " file: " +  file.toString());
+    FileInputStream fos = null;
+    FileDescriptor fd = null;
+
+    try {
+      fos = new FileInputStream(file);
+      fd = fos.getFD();
+      Log.d("MIDI", "FileInputStream: " + fos.toString());
+      Log.d("MIDI", "FileDescriptor: " + fd.toString());
+      mediaPlayer.setDataSource(fd);
+      mediaPlayer.prepare();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      if (fos != null) {
+        try {
+          fos.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    mediaPlayer.setLooping(looping);
+    mediaPlayer.start();
+  }
+
+
+  @SuppressWarnings("unused")
+  private void stopMidi() {
+    mediaPlayer.stop();
+    mediaPlayer.reset();
+  }
+
+  @SuppressWarnings("unused")
+  private void setMidiVolume(float volume) {
+    mediaPlayer.setVolume(volume, volume);
+  }
+
 }

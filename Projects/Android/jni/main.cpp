@@ -127,6 +127,27 @@ int MAX_LEVEL = 10; // TODO: figure out max level
 
 fix next_level_change_time = 0;
 
+void StartMusic(struct android_app* app)
+{
+    ovrJava java;
+
+    Asset_manager = app->activity->assetManager;
+
+    java.Vm = app->activity->vm;
+    java.Vm->AttachCurrentThread(&java.Env, NULL);
+    java.ActivityObject = app->activity->clazz;
+
+    auto env = &java.Env;
+    jclass objClass = (*env)->GetObjectClass(app->activity->clazz);
+    jmethodID method = (*env)->GetMethodID(objClass, "playMidi", "(Ljava/lang/String;Z)V");
+
+    char path[255];
+    sprintf(path, "%s/%s", app->activity->externalDataPath, "happy.mp3");
+    jstring jpath = (*env)->NewStringUTF(path);
+
+    (*env)->CallVoidMethod(java.ActivityObject, method, jpath, true);
+}
+
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
     ALOGV("android_app_entry()");
