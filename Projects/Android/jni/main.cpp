@@ -153,6 +153,8 @@ void android_main(struct android_app* app) {
     ALOGV("android_app_entry()");
     ALOGV("    android_main()");
 
+    chdir("/sdcard/DescentVR");
+
     Asset_manager = app->activity->assetManager;
 
     ovrJava java;

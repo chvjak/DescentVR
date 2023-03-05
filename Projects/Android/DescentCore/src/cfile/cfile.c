@@ -184,17 +184,8 @@ FILE * cfile_get_filehandle( char * filename, char * mode )
 	char temp[256];
 
 	descent_critical_error = 0;
-#ifdef ANDROID_NDK
-	AAsset* asset =  AAssetManager_open(Asset_manager, filename, AASSET_MODE_RANDOM);
-	if (!asset) {
-		fp = NULL;
-	} else {
-		fp = funopen(asset, android_read, android_write, android_seek, android_close);
-	}
-#else
-	sprintf(temp, "%s/%s", Resource_path, filename);
-	fp = fopen( temp, mode );
-#endif
+	fp = fopen( filename, mode );
+
 	if ( fp && descent_critical_error )	{
 		fclose(fp);
 		fp = NULL;
