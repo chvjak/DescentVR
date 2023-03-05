@@ -1001,6 +1001,8 @@ int fire_secondary = false;
 int fire_primary = false;
 
 extern ovrVector3f up, forward, right;
+extern bool next_level;
+extern bool prev_level;
 
 void ovrApp_HandleInput(ovrApp * app )
 {
@@ -1057,12 +1059,12 @@ void ovrApp_HandleInput(ovrApp * app )
         rightJoyState = (rightTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // strafe up
-            shipPosition = vecadd(shipPosition, vecmul(up, speed));
+            shipPosition = vecadd(shipPosition, vecmul(up, -speed));
         }
         rightJoyState = (rightTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
             // strafe down
-            shipPosition = vecadd(shipPosition, vecmul(up, -speed));
+            shipPosition = vecadd(shipPosition, vecmul(up, speed));
         }
 
     }
@@ -1112,12 +1114,16 @@ void ovrApp_HandleInput(ovrApp * app )
 
     }
 
+    // change level
+    if((dominantTrackedRemoteState->Buttons & ovrButton_B))
+    {
+        next_level = true;
+    }
 
-
-    // swap old / new
-    // why?
-    // ..
-
+    if((dominantTrackedRemoteState->Buttons & ovrButton_A))
+    {
+        prev_level = true;
+    }
 }
 
 ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1) {

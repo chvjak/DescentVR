@@ -112,7 +112,20 @@ extern AAssetManager* Asset_manager;
 extern "C" int allowed_to_fire_missile(void);
 
 ovrVector3f cross_product(ovrVector3f *pF, ovrVector3f *pF1);
+
+bool allowed_to_change_level();
+
 ovrVector3f up, forward, right;
+char dataPath[256];
+
+bool next_level = false;
+bool prev_level = false;
+
+int level = 1;
+
+int MAX_LEVEL = 10; // TODO: figure out max level
+
+fix next_level_change_time = 0;
 
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
@@ -190,7 +203,7 @@ void android_main(struct android_app* app) {
         init_game();
         set_detail_level_parameters(NUM_DETAIL_LEVELS - 2); // #define	NUM_DETAIL_LEVELS	6 , //	Note: Highest detail level (detail_level == NUM_DETAIL_LEVELS-1) is custom detail level.
         load_mission(0);
-        StartNewGame(7); // Start on level 1
+        StartNewGame(level); // Start on level 1
         gr_palette_apply(gr_palette);
 
         timer_init();
@@ -337,6 +350,34 @@ void android_main(struct android_app* app) {
                 do_laser_firing_player();
                 fire_primary = false;
             }
+
+            if(next_level && allowed_to_change_level())
+            {
+                next_level = false;
+                level = (level + 1) % MAX_LEVEL;
+                next_level_change_time = GameTime + 1000;
+                StartNewGame(level); // Start on level 1
+
+                shipPosition.x = 0;
+                shipPosition.y = 0;
+                shipPosition.z = 0;
+            }
+
+            if(prev_level && allowed_to_change_level())
+            {
+                prev_level = false;
+                level = (level - 1) % MAX_LEVEL;
+                next_level_change_time = GameTime + 1000;
+                StartNewGame(level); // Start on level 1
+
+                shipPosition.x = 0;
+                shipPosition.y = 0;
+                shipPosition.z = 0;
+
+                // seems levels have their starts in different points, e.g 2 and 3 are far off, but the rest - around 0,0,0 but still a bit off
+            }
+
+
         }
 
 #if MULTI_THREADED
@@ -388,6 +429,11 @@ void android_main(struct android_app* app) {
     vrapi_Shutdown();
 
     java.Vm->DetachCurrentThread();
+}
+
+bool allowed_to_change_level() {
+    return (next_level_change_time < GameTime);
+
 }
 
 ovrVector3f cross_product(ovrVector3f *a, ovrVector3f *b) {
