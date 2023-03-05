@@ -1003,6 +1003,8 @@ int fire_primary = false;
 extern ovrVector3f up, forward, right;
 extern bool next_level;
 extern bool prev_level;
+extern bool next_primary_weapon;
+extern bool next_secondary_weapon;
 
 void ovrApp_HandleInput(ovrApp * app )
 {
@@ -1124,6 +1126,18 @@ void ovrApp_HandleInput(ovrApp * app )
     {
         prev_level = true;
     }
+
+    // cycle weapon
+    if((offHandTrackedRemoteState->Buttons & ovrButton_X))
+    {
+        next_primary_weapon = true;
+    }
+
+    if((offHandTrackedRemoteState->Buttons & ovrButton_Y))
+    {
+        next_secondary_weapon = true;
+    }
+
 }
 
 ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1) {

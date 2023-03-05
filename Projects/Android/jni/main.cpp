@@ -123,9 +123,12 @@ bool prev_level = false;
 
 int level = 1;
 
-int MAX_LEVEL = 10; // TODO: figure out max level
+int MAX_LEVEL = MAX_LEVELS_PER_MISSION;
 
 fix next_level_change_time = 0;
+
+bool next_primary_weapon = false;
+bool next_secondary_weapon = false;
 
 void StartMusic(struct android_app* app)
 {
@@ -252,6 +255,14 @@ void android_main(struct android_app* app) {
         FrameTime = 0;			//make first frame zero
 
         Players[Player_num].flags |= PLAYER_FLAGS_INVULNERABLE;
+        Players[Player_num].primary_weapon_flags = 0xff;
+        Players[Player_num].secondary_weapon_flags = 0xff;
+
+        for (int i = 0; i<MAX_PRIMARY_WEAPONS; i++)
+            Players[Player_num].primary_ammo[i] = Primary_ammo_max[i];
+
+        for (int i = 0; i<MAX_SECONDARY_WEAPONS; i++)
+            Players[Player_num].secondary_ammo[i] = Secondary_ammo_max[i];
 
         digi_init();
     }
@@ -378,7 +389,6 @@ void android_main(struct android_app* app) {
 
             if (fire_secondary)
             {
-                Secondary_weapon = HOMING_INDEX;
                 Players[Player_num].secondary_ammo[Secondary_weapon] = 10;
 
                 if (allowed_to_fire_missile())
@@ -396,7 +406,7 @@ void android_main(struct android_app* app) {
             {
                 next_level = false;
                 level = (level + 1) % MAX_LEVEL;
-                next_level_change_time = GameTime + 1000;
+                next_level_change_time = GameTime + 10000;
                 StartNewGame(level); // Start on level 1
 
                 shipPosition.x = 0;
@@ -408,16 +418,28 @@ void android_main(struct android_app* app) {
             {
                 prev_level = false;
                 level = (level - 1) % MAX_LEVEL;
-                next_level_change_time = GameTime + 1000;
-                StartNewGame(level); // Start on level 1
+                next_level_change_time = GameTime + 10000;
+
+                // TODO: re-enable cheats
+                StartNewGame(level);
 
                 shipPosition.x = 0;
                 shipPosition.y = 0;
                 shipPosition.z = 0;
 
+                // TODO: add positions
                 // seems levels have their starts in different points, e.g 2 and 3 are far off, but the rest - around 0,0,0 but still a bit off
             }
 
+            if(next_primary_weapon) {
+                next_primary_weapon = false; // TODO: add delay
+                do_weapon_select(0);
+            }
+
+            if(next_secondary_weapon) {
+                next_secondary_weapon = false;
+                do_weapon_select(1);
+            }
 
         }
 
