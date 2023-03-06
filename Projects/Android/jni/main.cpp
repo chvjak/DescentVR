@@ -1,10 +1,6 @@
 #include <ctime>
-
-extern "C"
-{
 #include <unistd.h>
 #include <pthread.h>
-}
 
 #include <glm/glm.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -556,67 +552,4 @@ void android_main(struct android_app* app) {
     vrapi_Shutdown();
 
     java.Vm->DetachCurrentThread();
-}
-
-extern "C"
-{
-void draw_with_texture(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* colors, GLint texture_slot_id);
-void ogles_bm_bind_teximage_2d_with_max_alpha(grs_bitmap* bm, ubyte max_alpha);
-bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm) {
-    g3s_point pnt;
-    fix w, h;
-
-    w = fixmul(width, Matrix_scale.x) * 2;
-    h = fixmul(height, Matrix_scale.y) * 2;
-
-    GLfloat x0f, y0f, x1f, y1f, zf;
-
-    // Calculate OGLES coords
-    x0f = f2fl(pos->x - w / 2);
-    y0f = f2fl(pos->y - h / 2);
-    x1f = f2fl(pos->x + w / 2);
-    y1f = f2fl(pos->y + h / 2);
-    zf = -f2fl(pos->z);
-
-    // Looks like if cameraFront matches world-z - it's fine, than when it is 45 degree off - bitmap is perpendicular to what is needed and when it is 90 degree it is correct again
-    // looks like the angle of compensation rotation grows at x2 rate
-
-    glm::vec3 cameraFront(forward.x, forward.y, forward.z);
-    glm::vec3 pos1(f2fl(pos->x), f2fl(pos->y), -f2fl(pos->z));
-    glm::vec3 originalNormal(0.0f, 0.0f, 1.0f); // TODO: calculate normal, deal with 180 degree rotation
-    float norm1 = glm::l2Norm(cameraFront);
-    float norm2 = glm::l2Norm(originalNormal);
-    float angle = acos(glm::dot(originalNormal, cameraFront) / norm1 / norm2);
-
-    glm::vec3 axis = glm::cross(originalNormal, cameraFront);
-    axis /= glm::l2Norm(axis);
-
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, pos1);
-    model = glm::rotate(model, angle, axis);
-    model = glm::translate(model, -pos1);
-
-    glm::vec4 verts[] = { glm::vec4(x1f, y0f, zf, 1), glm::vec4(x0f, y0f, zf, 1), glm::vec4(x0f, y1f, zf, 1), glm::vec4(x1f, y1f, zf, 1) };
-    GLfloat vertices[4];
-
-    for(int i = 0; i < 4; i++)
-    {
-        verts[i] = model * verts[i] ;
-
-        vertices[i * 3] = verts[i].x;
-        vertices[i * 3 + 1] = verts[i].y;
-        vertices[i * 3 + 2] = verts[i].z;
-    }
-
-    // Draw
-    GLfloat texCoords[] = { 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f };
-    GLfloat colors[] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, };
-
-    ogles_bm_bind_teximage_2d_with_max_alpha(bm, 128);
-    draw_with_texture(4, vertices, texCoords, colors, bm->bm_ogles_tex_id);
-
-    return 0;
-
-}
-
 }

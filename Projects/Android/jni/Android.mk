@@ -33,6 +33,7 @@ FILE_LIST := \
 
 LOCAL_SRC_FILES := main.cpp \
                    vr.cpp \
+                   ogles3.cpp \
                    $(FILE_LIST:$(LOCAL_PATH)/%=%)
 
 LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl  -lGLESv3
