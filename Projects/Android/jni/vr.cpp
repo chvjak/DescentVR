@@ -1117,12 +1117,12 @@ void ovrApp_HandleInput(ovrApp * app )
     }
 
     // change level
-    if((dominantTrackedRemoteState->Buttons & ovrButton_B))
+    if((dominantTrackedRemoteState->Buttons & ovrButton_Joystick))
     {
         next_level = true;
     }
 
-    if((dominantTrackedRemoteState->Buttons & ovrButton_A))
+    if((offHandTrackedRemoteState->Buttons & ovrButton_Joystick))
     {
         prev_level = true;
     }
@@ -1130,12 +1130,12 @@ void ovrApp_HandleInput(ovrApp * app )
     // cycle weapon
     if((offHandTrackedRemoteState->Buttons & ovrButton_X))
     {
-        next_primary_weapon = true;
+        next_secondary_weapon = true;
     }
 
     if((offHandTrackedRemoteState->Buttons & ovrButton_Y))
     {
-        next_secondary_weapon = true;
+        next_primary_weapon = true;
     }
 
 }
@@ -1147,7 +1147,6 @@ ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1) {
 ovrVector3f vecmul(ovrVector3f f, float speed) {
     return (ovrVector3f){f.x * speed, f.y* speed, f.z * speed};
 }
-
 
 void ovrApp_HandleVrApiEvents(ovrApp* app) {
     ovrEventDataBuffer eventDataBuffer = {};

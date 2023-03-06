@@ -474,7 +474,7 @@ void android_main(struct android_app* app) {
                 level = (level + 1) % MAX_LEVEL;
                 if (level == 0) level = 1;
 
-                next_level_change_time = GameTime + DELAY;
+                next_level_change_time = GameTime + DELAY * 2;
 
                 StartLevel(level);
             }
@@ -485,7 +485,7 @@ void android_main(struct android_app* app) {
                 level = (level - 1) % MAX_LEVEL;
                 if (level == 0) level = 1;
 
-                next_level_change_time = GameTime + DELAY;
+                next_level_change_time = GameTime + DELAY * 2;
 
                 StartLevel(level);
             }
