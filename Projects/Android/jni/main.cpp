@@ -111,10 +111,6 @@ static void app_handle_cmd(struct android_app* app, int32_t cmd) {
 extern AAssetManager* Asset_manager;
 extern "C" int allowed_to_fire_missile(void);
 
-ovrVector3f cross_product(ovrVector3f *pF, ovrVector3f *pF1);
-
-bool allowed_to_change_level();
-
 ovrVector3f up, forward, right;
 char dataPath[256];
 
@@ -126,9 +122,18 @@ int level = 1;
 int MAX_LEVEL = MAX_LEVELS_PER_MISSION;
 
 fix next_level_change_time = 0;
+bool allowed_to_change_level() {
+    return (next_level_change_time < GameTime);
+}
 
 bool next_primary_weapon = false;
 bool next_secondary_weapon = false;
+
+fix next_weapon_change_time = 0;
+bool allowed_to_change_weapon() {
+    return (next_weapon_change_time < GameTime);
+}
+
 
 void StartMusic(struct android_app* app)
 {
@@ -169,6 +174,80 @@ void CheckMidi(struct android_app* app)
     (*env)->CallVoidMethod(java.ActivityObject, method);
 }
 
+int DELAY = 100000;
+void StartLevel(int level)
+{
+    StartNewGame(level);
+
+    Players[Player_num].flags |= PLAYER_FLAGS_INVULNERABLE;
+    Players[Player_num].primary_weapon_flags = 0xff;
+    Players[Player_num].secondary_weapon_flags = 0xff;
+
+    for (int i = 0; i<MAX_PRIMARY_WEAPONS; i++)
+        Players[Player_num].primary_ammo[i] = Primary_ammo_max[i];
+
+    for (int i = 0; i<MAX_SECONDARY_WEAPONS; i++)
+        Players[Player_num].secondary_ammo[i] = Secondary_ammo_max[i];
+
+    switch(level)
+    {
+        case 2:
+            shipPosition.x = -40;
+            shipPosition.y = -15;
+            shipPosition.z = -830;
+            break;
+
+        case 3:
+            shipPosition.x = -550;
+            shipPosition.y = 313;
+            shipPosition.z = -455;
+            break;
+
+        case 4:
+            shipPosition.x = 110;
+            shipPosition.y = -60;
+            shipPosition.z = 200;
+            break;
+
+
+        case 5:
+            shipPosition.x = 0;
+            shipPosition.y = -100;
+            shipPosition.z = -90;
+            break;
+
+        case 6:
+            shipPosition.x = 0;
+            shipPosition.y = -20;
+            shipPosition.z = 0;
+            break;
+
+        case 7:
+            shipPosition.x = -70;
+            shipPosition.y = -20;
+            shipPosition.z = -40;
+            break;
+
+        case 10:
+            shipPosition.x = 0;
+            shipPosition.y = 0;
+            shipPosition.z = -180;
+            break;
+        case 17:
+            shipPosition.x = 150;
+            shipPosition.y = -120;
+            shipPosition.z = -200;
+            break;
+
+
+        default:
+            shipPosition.x = 0;
+            shipPosition.y = 0;
+            shipPosition.z = 0;
+
+    }
+
+}
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
     ALOGV("android_app_entry()");
@@ -247,22 +326,13 @@ void android_main(struct android_app* app) {
         init_game();
         set_detail_level_parameters(NUM_DETAIL_LEVELS - 2); // #define	NUM_DETAIL_LEVELS	6 , //	Note: Highest detail level (detail_level == NUM_DETAIL_LEVELS-1) is custom detail level.
         load_mission(0);
-        StartNewGame(level); // Start on level 1
+        StartLevel(level);
         gr_palette_apply(gr_palette);
 
         timer_init();
         reset_time();
         FrameTime = 0;			//make first frame zero
 
-        Players[Player_num].flags |= PLAYER_FLAGS_INVULNERABLE;
-        Players[Player_num].primary_weapon_flags = 0xff;
-        Players[Player_num].secondary_weapon_flags = 0xff;
-
-        for (int i = 0; i<MAX_PRIMARY_WEAPONS; i++)
-            Players[Player_num].primary_ammo[i] = Primary_ammo_max[i];
-
-        for (int i = 0; i<MAX_SECONDARY_WEAPONS; i++)
-            Players[Player_num].secondary_ammo[i] = Secondary_ammo_max[i];
 
         digi_init();
     }
@@ -406,37 +476,31 @@ void android_main(struct android_app* app) {
             {
                 next_level = false;
                 level = (level + 1) % MAX_LEVEL;
-                next_level_change_time = GameTime + 10000;
-                StartNewGame(level); // Start on level 1
+                if (level == 0) level = 1;
 
-                shipPosition.x = 0;
-                shipPosition.y = 0;
-                shipPosition.z = 0;
+                next_level_change_time = GameTime + DELAY;
+
+                StartLevel(level);
             }
 
             if(prev_level && allowed_to_change_level())
             {
                 prev_level = false;
                 level = (level - 1) % MAX_LEVEL;
-                next_level_change_time = GameTime + 10000;
+                if (level == 0) level = 1;
 
-                // TODO: re-enable cheats
-                StartNewGame(level);
+                next_level_change_time = GameTime + DELAY;
 
-                shipPosition.x = 0;
-                shipPosition.y = 0;
-                shipPosition.z = 0;
-
-                // TODO: add positions
-                // seems levels have their starts in different points, e.g 2 and 3 are far off, but the rest - around 0,0,0 but still a bit off
+                StartLevel(level);
             }
 
-            if(next_primary_weapon) {
-                next_primary_weapon = false; // TODO: add delay
+            if(next_primary_weapon && allowed_to_change_weapon()) {
+                next_weapon_change_time =  GameTime + DELAY;
+                next_primary_weapon = false;
                 do_weapon_select(0);
             }
-
-            if(next_secondary_weapon) {
+            if(next_secondary_weapon&& allowed_to_change_weapon()) {
+                next_weapon_change_time =  GameTime + DELAY;
                 next_secondary_weapon = false;
                 do_weapon_select(1);
             }
@@ -492,18 +556,6 @@ void android_main(struct android_app* app) {
     vrapi_Shutdown();
 
     java.Vm->DetachCurrentThread();
-}
-
-bool allowed_to_change_level() {
-    return (next_level_change_time < GameTime);
-
-}
-
-ovrVector3f cross_product(ovrVector3f *a, ovrVector3f *b) {
-    ovrVector3f result = {a->y * b->z - a->z * b->y,
-                          -(a->x * b->z - a->z * b->x),
-                          a->x * b->y - a->y * b->x};
-    return result;
 }
 
 extern "C"
