@@ -336,14 +336,6 @@ static int ovrProgram_Create(
     GL(glAttachShader(program->Program, program->FragmentShader));
     program_with_tex_id = program->Program;
 
-    // Bind the vertex attribute locations.
-    for (int i = 0; i < sizeof(ProgramVertexAttributes) / sizeof(ProgramVertexAttributes[0]); i++) {
-        GL(glBindAttribLocation(
-                program->Program,
-                ProgramVertexAttributes[i].location,
-                ProgramVertexAttributes[i].name));
-    }
-
     GL(glLinkProgram(program->Program));
     GL(glGetProgramiv(program->Program, GL_LINK_STATUS, &r));
     if (r == GL_FALSE) {
@@ -653,7 +645,6 @@ void ovrScene_Clear(ovrScene* scene) {
     scene->CreatedVAOs = false;
     scene->Random = 2;
     scene->SceneMatrices = 0;
-    scene->InstanceTransformBuffer = 0;
 
     ovrProgram_Clear(&scene->Program);
 }
@@ -662,21 +653,8 @@ int ovrScene_IsCreated(ovrScene* scene) {
     return scene->CreatedScene;
 }
 
-// Returns a random float in the range [0, 1].
-static float ovrScene_RandomFloat(ovrScene* scene) {
-    scene->Random = 1664525L * scene->Random + 1013904223L;
-    unsigned int rf = 0x3F800000 | (scene->Random & 0x007FFFFF);
-    return (*(float*)&rf) - 1.0f;
-}
-
 void ovrScene_Create(ovrScene* scene, int useMultiview) {
     ovrProgram_Create(&scene->Program, VERTEX_SHADER, FRAGMENT_SHADER, useMultiview);
-
-    // Create the instance transform attribute buffer.
-    GL(glGenBuffers(1, &scene->InstanceTransformBuffer));
-    GL(glBindBuffer(GL_ARRAY_BUFFER, scene->InstanceTransformBuffer));
-    GL(glBufferData(GL_ARRAY_BUFFER, NUM_INSTANCES * 4 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW));
-    GL(glBindBuffer(GL_ARRAY_BUFFER, 0));
 
     // Setup the scene matrices.
     GL(glGenBuffers(1, &scene->SceneMatrices));
@@ -695,31 +673,8 @@ void ovrScene_Create(ovrScene* scene, int useMultiview) {
 
 void ovrScene_Destroy(ovrScene* scene) {
     ovrProgram_Destroy(&scene->Program);
-    GL(glDeleteBuffers(1, &scene->InstanceTransformBuffer));
     GL(glDeleteBuffers(1, &scene->SceneMatrices));
     scene->CreatedScene = false;
-}
-
-/*
-================================================================================
-
-ovrSimulation
-
-================================================================================
-*/
-
-
-void ovrSimulation_Clear(ovrSimulation* simulation) {
-    simulation->CurrentRotation.x = 0.0f;
-    simulation->CurrentRotation.y = 0.0f;
-    simulation->CurrentRotation.z = 0.0f;
-}
-
-void ovrSimulation_Advance(ovrSimulation* simulation, double elapsedDisplayTime) {
-    // Update rotation.
-    simulation->CurrentRotation.x = (float)(elapsedDisplayTime);
-    simulation->CurrentRotation.y = (float)(elapsedDisplayTime);
-    simulation->CurrentRotation.z = (float)(elapsedDisplayTime);
 }
 
 /*
@@ -763,45 +718,8 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
         ovrRenderer* renderer,
         const ovrJava* java,
         const ovrScene* scene,
-        const ovrSimulation* simulation,
         const ovrTracking2* tracking,
         ovrMobile* ovr) {
-    ovrMatrix4f rotationMatrices;
-    rotationMatrices = ovrMatrix4f_CreateRotation(0,0,0);  // radians * time
-
-    // Update the instance transform attributes.
-    GL(glBindBuffer(GL_ARRAY_BUFFER, scene->InstanceTransformBuffer));
-    ovrMatrix4f* modelMatrix = (ovrMatrix4f*)GL(glMapBufferRange(
-            GL_ARRAY_BUFFER,
-            0,
-            1 * sizeof(ovrMatrix4f),
-            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
-
-    for (int i = 0; i < NUM_INSTANCES; i++) {
-        // Write in order in case the mapped buffer lives on write-combined memory.
-        modelMatrix[i].M[0][0] = rotationMatrices.M[0][0];
-        modelMatrix[i].M[0][1] = rotationMatrices.M[0][1];
-        modelMatrix[i].M[0][2] = rotationMatrices.M[0][2];
-        modelMatrix[i].M[0][3] = rotationMatrices.M[0][3];
-
-        modelMatrix[i].M[1][0] = rotationMatrices.M[1][0];
-        modelMatrix[i].M[1][1] = rotationMatrices.M[1][1];
-        modelMatrix[i].M[1][2] = rotationMatrices.M[1][2];
-        modelMatrix[i].M[1][3] = rotationMatrices.M[1][3];
-
-        modelMatrix[i].M[2][0] = rotationMatrices.M[2][0];
-        modelMatrix[i].M[2][1] = rotationMatrices.M[2][1];
-        modelMatrix[i].M[2][2] = rotationMatrices.M[2][2];
-        modelMatrix[i].M[2][3] = rotationMatrices.M[2][3];
-
-        modelMatrix[i].M[3][0] = 0;
-        modelMatrix[i].M[3][1] = 0;
-        modelMatrix[i].M[3][2] = 0;
-        modelMatrix[i].M[3][3] = 1.0f;
-    }
-    GL(glUnmapBuffer(GL_ARRAY_BUFFER));
-    GL(glBindBuffer(GL_ARRAY_BUFFER, 0));
-
     ovrTracking2 updatedTracking = *tracking;
 
     ovrMatrix4f translation = ovrMatrix4f_CreateTranslation(-shipPosition.x, -shipPosition.y, -shipPosition.z);
@@ -823,14 +741,14 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
                                                                    0,
                                                                    2 * sizeof(ovrMatrix4f) /* 2 view matrices */ +
                                                                    2 * sizeof(ovrMatrix4f) /* 2 projection matrices */,
-                                                                   GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT)); // TODO: Why?
+                                                                   GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
 
     if (sceneMatrices != NULL) {
         memcpy((char*)sceneMatrices, &eyeViewMatrixTransposed, 2 * sizeof(ovrMatrix4f));
         memcpy((char*)sceneMatrices + 2 * sizeof(ovrMatrix4f), &projectionMatrixTransposed,2 * sizeof(ovrMatrix4f));
     }
 
-    GL(glUnmapBuffer(GL_UNIFORM_BUFFER)); // TODO: Why?
+    GL(glUnmapBuffer(GL_UNIFORM_BUFFER));
     GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
 
     ovrLayerProjection2 layer = vrapi_DefaultLayerProjection2();
@@ -852,11 +770,11 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
         ovrFramebuffer* frameBuffer = &renderer->FrameBuffer[eye];
         ovrFramebuffer_SetCurrent(frameBuffer);
 
-        GL(glUseProgram(scene->Program.Program)); // TODO: Why?
+        GL(glUseProgram(scene->Program.Program));
         GL(glBindBufferBase(
                 GL_UNIFORM_BUFFER,
                 scene->Program.UniformBinding[UNIFORM_SCENE_MATRICES],
-                scene->SceneMatrices)); // TODO: Why?
+                scene->SceneMatrices));
         if (scene->Program.UniformLocation[UNIFORM_VIEW_ID] >= 0) // NOTE: will not be present when multiview path is enabled.
         {
             GL(glUniform1i(scene->Program.UniformLocation[UNIFORM_VIEW_ID], eye)); // projection?
@@ -866,8 +784,6 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
         GL(glDepthMask(GL_TRUE));
         GL(glEnable(GL_DEPTH_TEST));
         GL(glDepthFunc(GL_LEQUAL));
-        //GL(glEnable(GL_CULL_FACE));
-        //GL(glCullFace(GL_BACK));
 
         GL(glViewport(0, 0, frameBuffer->Width, frameBuffer->Height));
         GL(glScissor(0, 0, frameBuffer->Width, frameBuffer->Height));
@@ -916,7 +832,6 @@ void ovrApp_Clear(ovrApp* app) {
 
     ovrEgl_Clear(&app->Egl);
     ovrScene_Clear(&app->Scene);
-    ovrSimulation_Clear(&app->Simulation);
 #if MULTI_THREADED
     ovrRenderThread_Clear(&app->RenderThread);
 #else

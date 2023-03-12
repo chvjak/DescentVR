@@ -200,7 +200,6 @@ typedef struct {
 } ovrProgram;
 
 typedef enum {
-    UNIFORM_MODEL_MATRIX,
     UNIFORM_VIEW_ID,
     UNIFORM_SCENE_MATRICES,
 } index_enum;
@@ -219,7 +218,6 @@ typedef struct {
 } ovrUniform;
 
 static ovrUniform ProgramUniforms[] = {
-    {UNIFORM_MODEL_MATRIX, UNIFORM_TYPE_MATRIX4X4, "ModelMatrix"},
     {UNIFORM_VIEW_ID, UNIFORM_TYPE_INT, "ViewID"},
     {UNIFORM_SCENE_MATRICES, UNIFORM_TYPE_BUFFER, "SceneMatrices"},
 };
@@ -252,7 +250,6 @@ static const char VERTEX_SHADER[] =
 in vec3 vertexPosition;\n\
 in vec3 vertexColor;\n\
 in vec2 vTexCoords;\n\
-in mat4 vertexTransform;\n\
 uniform SceneMatrices\n\
 {\n\
 	uniform mat4 ViewMatrix[NUM_VIEWS];\n\
@@ -289,8 +286,6 @@ void main()\n\
         }\n\
     }\
 }";
-
-// TODO: May be don't mix, seems to look better
 
 /*
 ================================================================================
@@ -331,51 +326,6 @@ typedef struct {
 /*
 ================================================================================
 
-ovrGeometry
-
-================================================================================
-*/
-
-typedef struct {
-    GLint Index;
-    GLint Size;
-    GLenum Type;
-    GLboolean Normalized;
-    GLsizei Stride;
-    const GLvoid* Pointer;
-} ovrVertexAttribPointer;
-
-#define MAX_VERTEX_ATTRIB_POINTERS 3
-
-typedef struct {
-    GLuint VertexBuffer;
-    GLuint IndexBuffer;
-    GLuint VertexArrayObject;
-    int VertexCount;
-    int IndexCount;
-    ovrVertexAttribPointer VertexAttribs[MAX_VERTEX_ATTRIB_POINTERS];
-} ovrGeometry;
-
-enum VertexAttributeLocation {
-    VERTEX_ATTRIBUTE_LOCATION_POSITION,
-    VERTEX_ATTRIBUTE_LOCATION_COLOR,
-    VERTEX_ATTRIBUTE_LOCATION_UV,
-    VERTEX_ATTRIBUTE_LOCATION_TRANSFORM
-};
-
-typedef struct {
-    enum VertexAttributeLocation location;
-    const char* name;
-} ovrVertexAttribute;
-
-static ovrVertexAttribute ProgramVertexAttributes[] = {
-        {VERTEX_ATTRIBUTE_LOCATION_POSITION, "vertexPosition"},
-        {VERTEX_ATTRIBUTE_LOCATION_COLOR, "vertexColor"},
-        {VERTEX_ATTRIBUTE_LOCATION_UV, "vertexUv"},
-        {VERTEX_ATTRIBUTE_LOCATION_TRANSFORM, "vertexTransform"}};
-/*
-================================================================================
-
 ovrScene
 
  // Seems not needed
@@ -390,9 +340,7 @@ typedef struct {
     int CreatedVAOs;
     unsigned int Random;
     ovrProgram Program;
-    ovrGeometry Cube;
     GLuint SceneMatrices;
-    GLuint InstanceTransformBuffer;
     ovrVector3f Rotations[NUM_ROTATIONS];
     ovrVector3f CubePositions[NUM_INSTANCES];
     int CubeRotations[NUM_INSTANCES];
@@ -402,30 +350,9 @@ void ovrScene_Clear(ovrScene* scene);
 
 int ovrScene_IsCreated(ovrScene* scene);
 
-void ovrScene_CreateVAOs(ovrScene* scene) ;
-void ovrScene_DestroyVAOs(ovrScene* scene) ;
-
-// Returns a random float in the range [0, 1].
-static float ovrScene_RandomFloat(ovrScene* scene) ;
-
 void ovrScene_Create(ovrScene* scene, int useMultiview) ;
 
 void ovrScene_Destroy(ovrScene* scene);
-/*
-================================================================================
-
-ovrSimulation
-
-================================================================================
-*/
-
-typedef struct {
-    ovrVector3f CurrentRotation;
-} ovrSimulation;
-
-void ovrSimulation_Clear(ovrSimulation* simulation) ;
-
-void ovrSimulation_Advance(ovrSimulation* simulation, double elapsedDisplayTime) ;
 
 /*
 ================================================================================
@@ -450,18 +377,8 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
     ovrRenderer* renderer,
     const ovrJava* java,
     const ovrScene* scene,
-    const ovrSimulation* simulation,
     const ovrTracking2* tracking,
     ovrMobile* ovr) ;
-
-ovrLayerProjection2 ovrRenderer_RenderFrame1(
-        ovrRenderer* renderer,
-        const ovrJava* java,
-        const ovrScene* scene,
-        const ovrSimulation* simulation,
-        const ovrTracking2* tracking,
-        ovrMobile* ovr) ;
-
 
 /*
 ================================================================================
@@ -730,7 +647,6 @@ typedef struct {
     int Resumed;
     ovrMobile* Ovr;
     ovrScene Scene;
-    ovrSimulation Simulation;
     long long FrameIndex;
     double DisplayTime;
     int SwapInterval;

@@ -475,7 +475,6 @@ void android_main(struct android_app* app) {
                 &appState.Renderer,
                 &appState.Java,
                 &appState.Scene,
-                &appState.Simulation,
                 &tracking,
                 appState.Ovr);
 
