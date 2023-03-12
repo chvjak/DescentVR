@@ -7,9 +7,9 @@ https://sidequestvr.com/
 
 Important Note
 ---------------
-The project is far from being ready. But you can already feed your nostalgia roaming around the levels you already forgot you know. 
+This project is far from being ready, but you can already relive the nostalgia by roaming around the levels you may have forgotten.
 
-This is just an engine port, the resource files (descent.hog and descent.pig) you should provide yourself copying from Descent copy you own. 
+This is just an engine port, so you will need to provide the resource files (descent.hog and descent.pig) yourself by copying them from the Descent copy you own.
 You can purchase it from https://store.steampowered.com/app/273570/Descent/.
 
 Installation
