@@ -50,10 +50,11 @@ Contributing
 ------------
 You need the following:
 
+* Clone DescentVR sources
+* Place GLM (https://github.com/g-truc/glm) in the same folder as DescentVR sources 
 * Android Developer Studio
-* Android SDK API level 24
-* Latest Android Native Development Kit
+* Android SDK
+* Android NDK 22
 * Oculus Mobile SDK
 * The DescentVR folder cloned from GitHub should be below VrSamples in the extracted SDK
 * Create a local.properties file in the root of the extracted Oculus Mobile SDK that contains the ndk.dir and sdk.dir properties for where your SDK/NDK are located (see Gradle documentation regarding this)
-* To build debug you will need a android.debug.keystore file placed in the following folder: oculus_sdk_dir/VrSamples/DescentVR/Projects/Android

@@ -15,6 +15,7 @@ android {
     // will replace an older one.
     applicationId "com.chvjak." + project.archivesBaseName
     minSdkVersion 24
+    targetSdkVersion 25
 
     // override app plugin abiFilters for 64-bit support
     externalNativeBuild {
