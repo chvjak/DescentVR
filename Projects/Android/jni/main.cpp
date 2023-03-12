@@ -130,47 +130,11 @@ bool allowed_to_change_weapon() {
     return (next_weapon_change_time < GameTime);
 }
 
+fix DELAY = F1_0;
 
-void StartMusic(struct android_app* app)
-{
-    ovrJava java;
+int try_switch_level(int , int);
+void try_switch_weapon(int secondary_flag);
 
-    Asset_manager = app->activity->assetManager;
-
-    java.Vm = app->activity->vm;
-    java.Vm->AttachCurrentThread(&java.Env, NULL);
-    java.ActivityObject = app->activity->clazz;
-
-    auto env = &java.Env;
-    jclass objClass = (*env)->GetObjectClass(app->activity->clazz);
-    jmethodID method = (*env)->GetMethodID(objClass, "playMidi", "(Ljava/lang/String;Z)V");
-
-    char path[255];
-    sprintf(path, "%s/%s", app->activity->externalDataPath, "happy.mp3");
-    jstring jpath = (*env)->NewStringUTF(path);
-
-    (*env)->CallVoidMethod(java.ActivityObject, method, jpath, true);
-}
-
-
-void CheckMidi(struct android_app* app)
-{
-    ovrJava java;
-
-    Asset_manager = app->activity->assetManager;
-
-    java.Vm = app->activity->vm;
-    java.Vm->AttachCurrentThread(&java.Env, NULL);
-    java.ActivityObject = app->activity->clazz;
-
-    auto env = &java.Env;
-    jclass objClass = (*env)->GetObjectClass(app->activity->clazz);
-    jmethodID method = (*env)->GetMethodID(objClass, "checkMidiPlayback", "()V");
-
-    (*env)->CallVoidMethod(java.ActivityObject, method);
-}
-
-int DELAY = 100000;
 void StartLevel(int level)
 {
     StartNewGame(level);
@@ -468,37 +432,26 @@ void android_main(struct android_app* app) {
                 fire_primary = false;
             }
 
-            if(next_level && allowed_to_change_level())
+            if(next_level)
             {
                 next_level = false;
-                level = (level + 1) % MAX_LEVEL;
-                if (level == 0) level = 1;
-
-                next_level_change_time = GameTime + DELAY * 2;
-
-                StartLevel(level);
+                level = try_switch_level(level, level + 1);
             }
 
-            if(prev_level && allowed_to_change_level())
+            if(prev_level)
             {
                 prev_level = false;
-                level = (level - 1) % MAX_LEVEL;
-                if (level == 0) level = 1;
-
-                next_level_change_time = GameTime + DELAY * 2;
-
-                StartLevel(level);
+                level = try_switch_level(level, level - 1);
             }
 
-            if(next_primary_weapon && allowed_to_change_weapon()) {
-                next_weapon_change_time =  GameTime + DELAY;
+            if(next_primary_weapon) {
                 next_primary_weapon = false;
-                do_weapon_select(0);
+                try_switch_weapon(1);
             }
-            if(next_secondary_weapon&& allowed_to_change_weapon()) {
-                next_weapon_change_time =  GameTime + DELAY;
+
+            if(next_secondary_weapon) {
                 next_secondary_weapon = false;
-                do_weapon_select(1);
+                try_switch_weapon(0);
             }
 
         }
@@ -553,3 +506,27 @@ void android_main(struct android_app* app) {
 
     java.Vm->DetachCurrentThread();
 }
+
+int try_switch_level(int old_level, int level1) {
+    if(allowed_to_change_level())
+    {
+        level1 = level1 % MAX_LEVEL;
+        if (level1 == 0) level1 = 1;
+        next_level_change_time = GameTime + DELAY * 2;
+
+        ALOGV("StartLevel(%d);", level1);
+        StartLevel(level1);
+
+        return level1;
+    }
+    return old_level;
+}
+
+void try_switch_weapon(int secondary_flag) {
+    if(allowed_to_change_weapon()) {
+        next_weapon_change_time =  GameTime + DELAY;
+        do_weapon_select(secondary_flag);
+    }
+}
+
+
