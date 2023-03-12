@@ -108,7 +108,6 @@ extern AAssetManager* Asset_manager;
 extern "C" int allowed_to_fire_missile(void);
 
 ovrVector3f up, forward, right;
-char dataPath[256];
 
 bool next_level = false;
 bool prev_level = false;
@@ -281,7 +280,7 @@ void android_main(struct android_app* app) {
         load_text();
         bm_init();
         g3_init();
-        texmerge_init(100);        // 10 cache bitmaps
+        texmerge_init(1000);
 
         init_game();
         set_detail_level_parameters(NUM_DETAIL_LEVELS - 2); // #define	NUM_DETAIL_LEVELS	6 , //	Note: Highest detail level (detail_level == NUM_DETAIL_LEVELS-1) is custom detail level.
@@ -291,8 +290,7 @@ void android_main(struct android_app* app) {
 
         timer_init();
         reset_time();
-        FrameTime = 0;			//make first frame zero
-
+        FrameTime = 0;
 
         digi_init();
     }
