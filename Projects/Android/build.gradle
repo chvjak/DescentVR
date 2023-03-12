@@ -16,7 +16,7 @@ android {
     applicationId "com.chvjak." + project.archivesBaseName
     minSdkVersion 24
     targetSdkVersion 25
-    compileSdkVersion 26
+    compileSdkVersion 29
 
     // override app plugin abiFilters for 64-bit support
     externalNativeBuild {
@@ -52,6 +52,17 @@ android {
 
   lintOptions {
     disable 'ExpiredTargetSdkVersion'
+  }
+
+  dependencies {
+    //noinspection GradleCompatible
+    implementation "com.android.support:support-compat:26.1.0"
+    //noinspection GradleCompatible
+    implementation "com.android.support:support-core-utils:26.1.0"
+  }
+
+  repositories {
+    google()
   }
 
 }

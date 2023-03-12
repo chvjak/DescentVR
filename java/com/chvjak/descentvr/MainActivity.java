@@ -1,17 +1,14 @@
 // Copyright (c) Facebook Technologies, LLC and its affiliates. All Rights reserved.
 package com.chvjak.descentvr;
 
-import android.content.Context;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.media.midi.MidiDeviceInfo;
-import android.media.midi.MidiManager;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.util.Log;
 
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.IOException;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+
 
 /**
  * When using NativeActivity, we currently need to handle loading of dependent shared libraries
@@ -38,71 +35,56 @@ public class MainActivity extends android.app.NativeActivity {
     System.loadLibrary("descentvr");
   }
 
-  private final static  MediaPlayer mediaPlayer = new MediaPlayer();
-  @SuppressWarnings("unused")
-  private void playMidi(String path, boolean looping) {
-    File file = new File(path);
-    Log.d("MIDI", " file: " +  file.toString());
-    FileInputStream fos = null;
-    FileDescriptor fd = null;
+  @Override protected void onCreate( Bundle icicle ) {
+    super.onCreate(icicle);
 
-    try {
-      fos = new FileInputStream(file);
-      fd = fos.getFD();
-      Log.d("MIDI", "FileInputStream: " + fos.toString());
-      Log.d("MIDI", "FileDescriptor: " + fd.toString());
-      mediaPlayer.setDataSource(fd);
-      mediaPlayer.prepare();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } finally {
-      if (fos != null) {
-        try {
-          fos.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+    checkPermissionsAndInitialize();
+  }
+
+  private static final int READ_EXTERNAL_STORAGE_PERMISSION_ID = 1;
+  private static final int WRITE_EXTERNAL_STORAGE_PERMISSION_ID = 2;
+  private void checkPermissionsAndInitialize() {
+    // Boilerplate for checking runtime permissions in Android.
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED){
+      ActivityCompat.requestPermissions(
+              this,
+              new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE},
+              WRITE_EXTERNAL_STORAGE_PERMISSION_ID);
+    }
+
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED)
+    {
+      ActivityCompat.requestPermissions(
+              this,
+              new String[] {Manifest.permission.READ_EXTERNAL_STORAGE},
+              READ_EXTERNAL_STORAGE_PERMISSION_ID);
+    }
+  }
+
+  /** Handles the user accepting the permission. */
+  @Override
+  public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+    int perms = 0;
+    if (requestCode == READ_EXTERNAL_STORAGE_PERMISSION_ID) {
+      if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
+        System.exit(0);
       }
-    }
-    mediaPlayer.setLooping(looping);
-    mediaPlayer.start();
-  }
-
-
-  @SuppressWarnings("unused")
-  private void stopMidi() {
-    mediaPlayer.stop();
-    mediaPlayer.reset();
-  }
-
-  @SuppressWarnings("unused")
-  private void setMidiVolume(float volume) {
-    mediaPlayer.setVolume(volume, volume);
-  }
-
-
-  private void checkMidiPlayback() {
-    AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-    if (audioManager == null) {
-      Log.d("MIDI", "AudioManager not available.");
-      return;
+      else
+        perms++;
     }
 
-    MidiManager midiManager = (MidiManager) getSystemService(Context.MIDI_SERVICE);
-    if (midiManager == null) {
-      Log.d("MIDI", "MidiManager not available.");
-      return;
+    if (requestCode == WRITE_EXTERNAL_STORAGE_PERMISSION_ID) {
+      if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
+        System.exit(0);
+      }
+      else
+        perms++;
     }
 
-    MidiDeviceInfo[] infos = midiManager.getDevices();
-    if (infos.length == 0) {
-      Log.d("MIDI", "No MIDI devices found.");
-      return;
-    }
-
-    for (MidiDeviceInfo info : infos) {
-      Log.d("MIDI", "MIDI device found: " + info.toString());
-    }
+    if(perms != 2)
+      checkPermissionsAndInitialize();
   }
 
 }
