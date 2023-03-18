@@ -63,11 +63,14 @@ android {
 
   repositories {
     google()
+    maven { url "https://jitpack.io" }
+
   }
 
 }
 
 dependencies {
-implementation files('D:\\Users\\Dmytro\\Documents\\JFugue-for-Android-5.0.1.201503\\jfugue-android\\snapshot\\jp\\kshoji\\jfugue-android\\5.0.1.201503\\jfugue-android-5.0.1.201503.aar')
-  implementation files('D:\\Users\\Dmytro\\Documents\\javax.sound.midi-for-Android-0.0.4\\javax.sound.midi\\repository\\jp\\kshoji\\javax-sound-midi\\0.0.4\\javax-sound-midi-0.0.4.aar')
+  implementation 'com.github.billthefarmer:mididriver:v1.24'
+
 }
+

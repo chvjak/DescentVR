@@ -10,14 +10,14 @@ import android.util.Log;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 
-import org.jfugue.player.Player;
-import org.jfugue.midi.MidiFileManager;
-import org.jfugue.pattern.Pattern;
+import org.billthefarmer.mididriver.MidiDriver;
+import org.billthefarmer.mididriver.MidiConstants;
+import org.billthefarmer.mididriver.GeneralMidiConstants;
+import org.billthefarmer.mididriver.ReverbConstants;
 
 import java.io.File;
 import java.io.IOException;
 
-import jp.kshoji.javax.sound.midi.InvalidMidiDataException;
 
 /**
  * When using NativeActivity, we currently need to handle loading of dependent shared libraries
@@ -39,6 +39,7 @@ import jp.kshoji.javax.sound.midi.InvalidMidiDataException;
  * libraries have circular dependencies.
  */
 public class MainActivity extends android.app.NativeActivity {
+  static MidiDriver midiDriver;
   static {
     System.loadLibrary("vrapi");
     System.loadLibrary("descentvr");
@@ -48,6 +49,7 @@ public class MainActivity extends android.app.NativeActivity {
 
     checkPermissionsAndInitialize();
 
+    midiDriver = MidiDriver.getInstance();
   }
 
   private static final int READ_EXTERNAL_STORAGE_PERMISSION_ID = 1;
@@ -98,23 +100,43 @@ public class MainActivity extends android.app.NativeActivity {
 
   public void PlayMidi(String midiPathName, boolean looping)
   {
-    Player player = new Player();
-    Pattern pattern = null;
-    try {
-      pattern = MidiFileManager.loadPatternFromMidi(new File(midiPathName));
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    catch (InvalidMidiDataException e) {
-      e.printStackTrace();
-    }
+    midiDriver.start();
 
+    // Program change - harpsichord
+    sendMidi(MidiConstants.PROGRAM_CHANGE,
+            GeneralMidiConstants.HARPSICHORD);
+
+    int config[] = midiDriver.config();
+
+    midiDriver.setVolume(100);
     Log.d("MIDI:", "Starting Playing pattern");
-    Log.d("MIDI:", pattern.toString());
-    for(int i = 0; i < 20; i++) {
-      player.play(" X[Volume]=10200 C D E F G A B");
+    for (int i =0; i < 100; i++) {
+      sendMidi(MidiConstants.NOTE_ON, 48, 63);
+      sendMidi(MidiConstants.NOTE_ON, 52, 63);
+      sendMidi(MidiConstants.NOTE_ON, 55, 63);
     }
-    //player.play(pattern);
     Log.d("MIDI:", "Started Playing");
+  }
+
+  protected void sendMidi(int m, int n)
+  {
+    byte msg[] = new byte[2];
+
+    msg[0] = (byte) m;
+    msg[1] = (byte) n;
+
+    midiDriver.write(msg);
+  }
+
+  // Send a midi message, 3 bytes
+  protected void sendMidi(int m, int n, int v)
+  {
+    byte msg[] = new byte[3];
+
+    msg[0] = (byte) m;
+    msg[1] = (byte) n;
+    msg[2] = (byte) v;
+
+    midiDriver.write(msg);
   }
 }
