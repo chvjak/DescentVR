@@ -58,10 +58,16 @@ android {
     implementation "com.android.support:support-compat:26.1.0"
     //noinspection GradleCompatible
     implementation "com.android.support:support-core-utils:26.1.0"
+
   }
 
   repositories {
     google()
   }
 
+}
+
+dependencies {
+implementation files('D:\\Users\\Dmytro\\Documents\\JFugue-for-Android-5.0.1.201503\\jfugue-android\\snapshot\\jp\\kshoji\\jfugue-android\\5.0.1.201503\\jfugue-android-5.0.1.201503.aar')
+  implementation files('D:\\Users\\Dmytro\\Documents\\javax.sound.midi-for-Android-0.0.4\\javax.sound.midi\\repository\\jp\\kshoji\\javax-sound-midi\\0.0.4\\javax-sound-midi-0.0.4.aar')
 }

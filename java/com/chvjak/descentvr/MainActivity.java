@@ -3,12 +3,21 @@ package com.chvjak.descentvr;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.util.Log;
 
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 
+import org.jfugue.player.Player;
+import org.jfugue.midi.MidiFileManager;
+import org.jfugue.pattern.Pattern;
+
+import java.io.File;
+import java.io.IOException;
+
+import jp.kshoji.javax.sound.midi.InvalidMidiDataException;
 
 /**
  * When using NativeActivity, we currently need to handle loading of dependent shared libraries
@@ -34,11 +43,11 @@ public class MainActivity extends android.app.NativeActivity {
     System.loadLibrary("vrapi");
     System.loadLibrary("descentvr");
   }
-
   @Override protected void onCreate( Bundle icicle ) {
     super.onCreate(icicle);
 
     checkPermissionsAndInitialize();
+
   }
 
   private static final int READ_EXTERNAL_STORAGE_PERMISSION_ID = 1;
@@ -87,4 +96,25 @@ public class MainActivity extends android.app.NativeActivity {
       checkPermissionsAndInitialize();
   }
 
+  public void PlayMidi(String midiPathName, boolean looping)
+  {
+    Player player = new Player();
+    Pattern pattern = null;
+    try {
+      pattern = MidiFileManager.loadPatternFromMidi(new File(midiPathName));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    catch (InvalidMidiDataException e) {
+      e.printStackTrace();
+    }
+
+    Log.d("MIDI:", "Starting Playing pattern");
+    Log.d("MIDI:", pattern.toString());
+    for(int i = 0; i < 20; i++) {
+      player.play(" X[Volume]=10200 C D E F G A B");
+    }
+    //player.play(pattern);
+    Log.d("MIDI:", "Started Playing");
+  }
 }
