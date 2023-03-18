@@ -1,7 +1,74 @@
 LOCAL_PATH := $(call my-dir)
+
 include $(CLEAR_VARS)
 LOCAL_MODULE := fluidsynth
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libfluidsynth.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := instpatch
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libinstpatch-1.0.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := gobject
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libgobject-2.0.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := gthread
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libgthread-2.0.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := glib
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libglib-2.0.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := sndfile
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libsndfile.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := oboe
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/liboboe.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := pcre
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libpcre.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := vorbisenc
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libvorbisenc.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := FLAC
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libFLAC.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := opus
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libopus.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := vorbis
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libvorbis.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := ogg
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libogg.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := omp
+LOCAL_SRC_FILES := C:/Users/Dmytro/AppData/Local/Android/Sdk/ndk/22.1.7171670/toolchains/llvm/prebuilt/windows-x86_64/lib64/clang/11.0.5/lib/linux/aarch64/libomp.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -48,7 +115,7 @@ LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl  -lGLESv3
 LOCAL_LDFLAGS := -u ANativeActivity_onCreate -fuse-ld=bfd
 
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
-LOCAL_SHARED_LIBRARIES := vrapi fluidsynth
+LOCAL_SHARED_LIBRARIES := vrapi fluidsynth omp instpatch gobject gthread glib sndfile oboe c++_shared pcre vorbisenc FLAC opus vorbis ogg
 
 include $(BUILD_SHARED_LIBRARY)
 

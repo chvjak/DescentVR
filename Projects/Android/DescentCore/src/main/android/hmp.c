@@ -15,29 +15,12 @@ void hmp_init() {
 
 char *appClass = "com/chvjak/descentvr/MainActivity";
 void hmp_stop(hmp_file *hmp) {
-	JNIEnv *env;
-	jclass clazz;
-	jmethodID method;
-
-	(*jvm)->GetEnv(jvm, (void**)&env, JNI_VERSION_1_6);
-	clazz = (*env)->FindClass(env, appClass);
-	//method = (*env)->GetMethodID(env, clazz, "stopMidi", "()V");
-	//(*env)->CallVoidMethod(env, Activity, method);
-	(*env)->DeleteLocalRef(env, clazz);
 }
 
 void hmp_setvolume(hmp_file *hmp, int volume) {
-	JNIEnv *env;
-	jclass clazz;
-	jmethodID method;
-
-	(*jvm)->GetEnv(jvm, (void**)&env, JNI_VERSION_1_6);
-	clazz = (*env)->FindClass(env, appClass);
-	//method = (*env)->GetMethodID(env, clazz, "setMidiVolume", "(F)V");
-	//(*env)->CallVoidMethod(env, Activity, method, (jfloat)volume / 128.0f);
-	(*env)->DeleteLocalRef(env, clazz);
 }
 
+void StartMusic(const char* MIDIFILE, int FILELEN);
 int hmp_play(hmp_file *hmp, bool loop) {
 	const char *midbuf;
 	const char path[PATH_MAX];
@@ -49,16 +32,7 @@ int hmp_play(hmp_file *hmp, bool loop) {
 	jstring jpath;
 
 	hmp2mid(hmp, &midbuf, &midlen);
-	file = fopen("/sdcard/DescentVR/tmp.mid", "wb");
-	fwrite(midbuf, 1, midlen, file);
-	fclose(file);
-	free(midbuf);
-	(*jvm)->GetEnv(jvm, (void**)&env, JNI_VERSION_1_6);
-	jpath = (*env)->NewStringUTF(env, path);
-	clazz = (*env)->FindClass(env, appClass);
-	//method = (*env)->GetMethodID(env, clazz, "playMidi", "(Ljava/lang/String;Z)V");
-	//(*env)->CallVoidMethod(env, Activity, method, jpath, loop);
-	(*env)->DeleteLocalRef(env, clazz);
-	(*env)->DeleteLocalRef(env, jpath);
+	StartMusic(midbuf, midlen);
+
 	return 0;
 }
