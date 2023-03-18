@@ -1,6 +1,10 @@
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
+LOCAL_MODULE := fluidsynth
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libfluidsynth.so
+include $(PREBUILT_SHARED_LIBRARY)
 
+include $(CLEAR_VARS)
 LOCAL_MODULE := descentvr
 
 LOCAL_CFLAGS += -DANDROID_NDK -DDISABLE_IMPORTGL -DOGLES -DNASM -DNETWORK
@@ -9,7 +13,10 @@ DESCENT_PATH := $(LOCAL_PATH)/../DescentCore/src/
 
 GLM_PATH := $(LOCAL_PATH)/../../../../
 
-LOCAL_C_INCLUDES += $(GLM_PATH) \
+FLUIDSYNTH_PATH := $(LOCAL_PATH)/../../../../FluidSynth/
+
+LOCAL_C_INCLUDES += $(FLUIDSYNTH_PATH)/include/ \
+                    $(GLM_PATH) \
                     $(DESCENT_PATH)/lib/ \
                     $(LOCAL_PATH)/
 FILE_LIST := \
@@ -41,7 +48,7 @@ LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl  -lGLESv3
 LOCAL_LDFLAGS := -u ANativeActivity_onCreate -fuse-ld=bfd
 
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
-LOCAL_SHARED_LIBRARIES := vrapi
+LOCAL_SHARED_LIBRARIES := vrapi fluidsynth
 
 include $(BUILD_SHARED_LIBRARY)
 

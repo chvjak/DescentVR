@@ -46,6 +46,8 @@ extern "C"
 #include <fcntl.h>
 #include <errno.h>
 
+#include <fluidsynth.h>
+
 /**
  * Process the next main command.
  */
@@ -210,22 +212,32 @@ void StartLevel(int level)
 
 void StartMusic(struct android_app* app)
 {
-    ovrJava java;
+    const char MIDIFILE[] = {
+            0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
+            0x00, 0x01, 0x00, 0x01, 0x01, 0xe0, 0x4d, 0x54,
+            0x72, 0x6b, 0x00, 0x00, 0x00, 0x20, 0x00, 0x90,
+            0x3c, 0x64, 0x87, 0x40, 0x80, 0x3c, 0x7f, 0x00,
+            0x90, 0x43, 0x64, 0x87, 0x40, 0x80, 0x43, 0x7f,
+            0x00, 0x90, 0x48, 0x64, 0x87, 0x40, 0x80, 0x48,
+            0x7f, 0x83, 0x60, 0xff, 0x2f, 0x00
+    };
 
-    Asset_manager = app->activity->assetManager;
+    int i;
+    void* buffer;
+    size_t buffer_len;
+    fluid_settings_t* settings;
+    fluid_synth_t* synth;
+    fluid_player_t* player;
+    fluid_audio_driver_t* adriver;
+    settings = new_fluid_settings();
+    synth = new_fluid_synth(settings);
+    player = new_fluid_player(synth);
+    adriver = new_fluid_audio_driver(settings, synth);
 
-    java.Vm = app->activity->vm;
-    java.Vm->AttachCurrentThread(&java.Env, NULL);
-    java.ActivityObject = app->activity->clazz;
-
-    auto env = &java.Env;
-    jclass objClass = (*env)->GetObjectClass(app->activity->clazz);
-    jmethodID method = (*env)->GetMethodID(objClass, "PlayMidi", "(Ljava/lang/String;Z)V");
-
-    char* path = "tmp.mid";
-    jstring jpath = (*env)->NewStringUTF(path);
-
-    (*env)->CallVoidMethod(java.ActivityObject, method, jpath, true);
+    /* queue up the in-memory midi file */
+    fluid_player_add_mem(player, MIDIFILE, sizeof(MIDIFILE));
+    /* play the midi file */
+    fluid_player_play(player);
 }
 
 void android_main(struct android_app* app) {
@@ -235,7 +247,7 @@ void android_main(struct android_app* app) {
 
 
     chdir("/sdcard/DescentVR");
-    StartMusic(app);
+    //StartMusic(app);
 
     Asset_manager = app->activity->assetManager;
 
