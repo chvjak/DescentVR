@@ -215,29 +215,37 @@ fluid_synth_t* synth;
 fluid_player_t* midi_player;
 fluid_audio_driver_t* adriver;
 
+void CreateMidiPlayer()
+{
+    midi_player = new_fluid_player(synth);
+    fluid_player_set_loop(midi_player, -1);
+}
+
 void InitMusic()
 {
     settings = new_fluid_settings();
     synth = new_fluid_synth(settings);
-    midi_player = new_fluid_player(synth);
-    //fluid_settings_setstr(settings, "player.reset-synth", "0");
-
-    fluid_player_set_loop(midi_player, 1); // Seems doesn't work
     fluid_synth_sfload(synth, "merlin_silver.sf2", 1);
     adriver = new_fluid_audio_driver(settings, synth);
+
+    CreateMidiPlayer();
 }
 
 extern "C"
 void StartMusic(const char* MIDIFILE, int FILELEN)
 {
     int status = fluid_player_get_status(midi_player);
-    while (status != FLUID_PLAYER_READY && status != FLUID_PLAYER_DONE)
+    fluid_player_stop(midi_player);
+
+    while (status == FLUID_PLAYER_PLAYING || status == FLUID_PLAYER_STOPPING)
     {
-        fluid_player_stop(midi_player); // just pauses. TODO: re-create player
         status = fluid_player_get_status(midi_player);
     }
-    fluid_player_add_mem(midi_player, MIDIFILE, FILELEN);
 
+    delete_fluid_player	(midi_player);
+    CreateMidiPlayer();
+
+    fluid_player_add_mem(midi_player, MIDIFILE, FILELEN);
     fluid_player_play(midi_player);
 }
 
