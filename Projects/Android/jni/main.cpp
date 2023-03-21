@@ -47,6 +47,7 @@ extern "C"
 #include <errno.h>
 
 #include <fluidsynth.h>
+#include <dirent.h>
 
 /**
  * Process the next main command.
@@ -150,6 +151,7 @@ void StartLevel(int level)
     for (int i = 0; i<MAX_SECONDARY_WEAPONS; i++)
         Players[Player_num].secondary_ammo[i] = Secondary_ammo_max[i];
 
+
     switch(level)
     {
         case 2:
@@ -200,11 +202,10 @@ void StartLevel(int level)
             shipPosition.z = -200;
             break;
 
-
         default:
-            shipPosition.x = 0;
-            shipPosition.y = 0;
-            shipPosition.z = 0;
+            shipPosition.x = f2fl(Player_init->pos.x);
+            shipPosition.y = f2fl(Player_init->pos.y);
+            shipPosition.z = f2fl(Player_init->pos.x);
 
     }
 
@@ -218,14 +219,18 @@ fluid_audio_driver_t* adriver;
 void CreateMidiPlayer()
 {
     midi_player = new_fluid_player(synth);
-    fluid_player_set_loop(midi_player, -1);
+    fluid_player_set_loop(midi_player, -1); // doesn't loop infinitely for some reason
 }
 
-void InitMusic()
+void InitMusic(const char* soundfont_path_name)
 {
     settings = new_fluid_settings();
+
+    fluid_settings_setstr(settings, "player.reset-synth", "1");
+    fluid_settings_setstr(settings, "synth.gain", "1.6");
+
     synth = new_fluid_synth(settings);
-    fluid_synth_sfload(synth, "merlin_silver.sf2", 1);
+    fluid_synth_sfload(synth, soundfont_path_name, 1);
     adriver = new_fluid_audio_driver(settings, synth);
 
     CreateMidiPlayer();
@@ -234,28 +239,42 @@ void InitMusic()
 extern "C"
 void StartMusic(const char* MIDIFILE, int FILELEN)
 {
-    int status = fluid_player_get_status(midi_player);
     fluid_player_stop(midi_player);
 
+    int status = fluid_player_get_status(midi_player);
     while (status == FLUID_PLAYER_PLAYING || status == FLUID_PLAYER_STOPPING)
     {
         status = fluid_player_get_status(midi_player);
     }
+    sleep(1);
 
     delete_fluid_player	(midi_player);
+
+
     CreateMidiPlayer();
 
     fluid_player_add_mem(midi_player, MIDIFILE, FILELEN);
     fluid_player_play(midi_player);
 }
 
+extern int digi_volume;
+
+void ls(const char * path) {
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(path);
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            ALOGV("%s\n", dir->d_name);
+        }
+        closedir(d);
+    }
+}
 void android_main(struct android_app* app) {
     ALOGV("----------------------------------------------------------------");
     ALOGV("android_app_entry()");
     ALOGV("    android_main()");
 
-    chdir("/sdcard/DescentVR");
-    InitMusic();
 
     Asset_manager = app->activity->assetManager;
 
@@ -263,6 +282,9 @@ void android_main(struct android_app* app) {
     java.Vm = app->activity->vm;
     java.Vm->AttachCurrentThread(&java.Env, NULL);
     java.ActivityObject = app->activity->clazz;
+
+    chdir("/sdcard/DescentVR");
+    InitMusic("merlin_silver.sf2");
 
     // Note that AttachCurrentThread will reset the thread name.
     prctl(PR_SET_NAME, (long)"OVR::Main", 0, 0, 0);
@@ -336,6 +358,7 @@ void android_main(struct android_app* app) {
         FrameTime = 0;
 
         digi_init();
+        digi_set_digi_volume( (32768)/2 );
     }
 
     while (app->destroyRequested == 0) {

@@ -3,6 +3,7 @@ package com.chvjak.descentvr;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.nfc.Tag;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,7 +12,10 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 
 /**
@@ -42,6 +46,8 @@ public class MainActivity extends android.app.NativeActivity {
     super.onCreate(icicle);
 
     checkPermissionsAndInitialize();
+
+    copy_asset("/sdcard/DescentVR/", "merlin_silver.sf2");
   }
 
   private static final int READ_EXTERNAL_STORAGE_PERMISSION_ID = 1;
@@ -89,5 +95,43 @@ public class MainActivity extends android.app.NativeActivity {
     if(perms != 2)
       checkPermissionsAndInitialize();
   }
+
+  public void copy_asset(String path, String name) {
+    File f = new File(path + "/" + name);
+    if (!f.exists()) {
+
+      //Ensure we have an appropriate folder
+      new File(path).mkdirs();
+      _copy_asset(name, path + "/" + name);
+    }
+  }
+
+  public void _copy_asset(String name_in, String name_out) {
+    AssetManager assets = this.getAssets();
+    try {
+      InputStream in = assets.open(name_in);
+      OutputStream out = new FileOutputStream(name_out);
+
+      copy_stream(in, out);
+
+      out.close();
+      in.close();
+
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static void copy_stream(InputStream in, OutputStream out)
+          throws IOException {
+    byte[] buf = new byte[1024];
+    while (true) {
+      int count = in.read(buf);
+      if (count <= 0)
+        break;
+      out.write(buf, 0, count);
+    }
+  }
+
 
 }
