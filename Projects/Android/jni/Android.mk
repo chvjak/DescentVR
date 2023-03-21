@@ -1,68 +1,70 @@
 LOCAL_PATH := $(call my-dir)
 
+FLUIDSYNTH_PATH := $(FLUIDSYNTH_PATH)/
+
 include $(CLEAR_VARS)
 LOCAL_MODULE := fluidsynth
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libfluidsynth.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libfluidsynth.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := instpatch
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libinstpatch-1.0.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libinstpatch-1.0.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := gobject
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libgobject-2.0.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libgobject-2.0.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := gthread
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libgthread-2.0.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libgthread-2.0.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := glib
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libglib-2.0.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libglib-2.0.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := sndfile
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libsndfile.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libsndfile.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := oboe
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/liboboe.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/liboboe.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := pcre
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libpcre.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libpcre.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := vorbisenc
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libvorbisenc.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libvorbisenc.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := FLAC
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libFLAC.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libFLAC.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := opus
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libopus.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libopus.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := vorbis
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libvorbis.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libvorbis.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := ogg
-LOCAL_SRC_FILES := $(LOCAL_PATH)/../../../../FluidSynth/lib/arm64-v8a/libogg.so
+LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libogg.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 
@@ -79,8 +81,6 @@ LOCAL_CFLAGS += -DANDROID_NDK -DDISABLE_IMPORTGL -DOGLES -DNASM -DNETWORK
 DESCENT_PATH := $(LOCAL_PATH)/../DescentCore/src/
 
 GLM_PATH := $(LOCAL_PATH)/../../../../
-
-FLUIDSYNTH_PATH := $(LOCAL_PATH)/../../../../FluidSynth/
 
 LOCAL_C_INCLUDES += $(FLUIDSYNTH_PATH)/include/ \
                     $(GLM_PATH) \

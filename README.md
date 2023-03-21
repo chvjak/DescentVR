@@ -42,7 +42,6 @@ Things to note / FAQs:
 Known Issues:
 -------------
 * No cross hair. Just shoot, you will see where the projectiles are flying
-* Music doesn't play. No MIDI on Oculus :(
 * On some on levels above 10 - you may find yourself off place. Just fly back to start through space
 * Many more - please submit most annoying
 
@@ -52,6 +51,7 @@ You need the following:
 
 * Clone DescentVR sources
 * Place GLM (https://github.com/g-truc/glm) in the same folder as DescentVR sources 
+* Unzip Fluid Synth binaries for Android (https://github.com/FluidSynth/FluidSynth) in the same folder as DescentVR sources
 * Android Developer Studio
 * Android SDK
 * Android NDK 22
