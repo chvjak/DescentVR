@@ -64,6 +64,4 @@ void scale_bitmap_ogles(grs_bitmap *bp, int x0, int y0, int x1, int y1) {
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-#else
-void scale_bitmap_ogles(grs_bitmap *bp, int x0, int y0, int x1, int y1) {}
 #endif

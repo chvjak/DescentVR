@@ -295,6 +295,7 @@ void ovrProgram_Clear(ovrProgram* program) {
 }
 
 GLint program_with_tex_id;
+GLint ortho_program_id = -1;
 
 static int ovrProgram_Create(
         ovrProgram* program,
@@ -653,6 +654,57 @@ int ovrScene_IsCreated(ovrScene* scene) {
     return scene->CreatedScene;
 }
 
+int compileShader(int shaderType, const char* shaderSource)
+{
+    // Create an empty vertex shader handle
+    GLuint shaderId = glCreateShader(shaderType);
+
+    // Send the vertex shader source code to GL
+    // Note that std::string's .c_str is NULL character terminated.
+    const GLchar* source = (const GLchar*)shaderSource;
+    glShaderSource(shaderId, 1, &source, 0);
+
+    // Compile the vertex shader
+    glCompileShader(shaderId);
+
+    GLint isCompiled = 0;
+    glGetShaderiv(shaderId, GL_COMPILE_STATUS, &isCompiled);
+    if (isCompiled == GL_FALSE)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &maxLength);
+
+        // The maxLength includes the NULL character
+        char* infoLog = new char[maxLength];
+        glGetShaderInfoLog(shaderId, maxLength, &maxLength, &infoLog[0]);
+
+        ALOGE("%s", infoLog) ;
+
+        // We don't need the shader anymore.
+        glDeleteShader(shaderId);
+
+        // Use the infoLog as you see fit.
+
+        // In this simple program, we'll just leave
+        return -1;
+    }
+
+    return shaderId;
+}
+
+GLuint BuildProgram(const char* vertex_shader_text, const char* fragment_shader_text)
+{
+    GLuint vertex_shader_id = compileShader(GL_VERTEX_SHADER, vertex_shader_text);
+    GLuint  fragment_shader_id = compileShader(GL_FRAGMENT_SHADER, fragment_shader_text);
+
+    GLuint program_id = glCreateProgram();
+    GL(glAttachShader(program_id, vertex_shader_id));
+    GL(glAttachShader(program_id, fragment_shader_id));
+    GL(glLinkProgram(program_id));
+
+    return program_id;
+}
+
 void ovrScene_Create(ovrScene* scene, int useMultiview) {
     ovrProgram_Create(&scene->Program, VERTEX_SHADER, FRAGMENT_SHADER, useMultiview);
 
@@ -666,6 +718,9 @@ void ovrScene_Create(ovrScene* scene, int useMultiview) {
             NULL,
             GL_STATIC_DRAW));
     GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
+
+
+    ortho_program_id = BuildProgram(vertex_shader_with_tex_text, fragment_shader_with_tex_text);
 
     scene->CreatedScene = true;
 
@@ -714,6 +769,7 @@ void ovrRenderer_Destroy(ovrRenderer* renderer) {
     }
 }
 
+extern "C" void game_draw_hud_stuff();
 ovrLayerProjection2 ovrRenderer_RenderFrame(
         ovrRenderer* renderer,
         const ovrJava* java,
@@ -721,17 +777,17 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
         const ovrTracking2* tracking,
         ovrMobile* ovr) {
     ovrTracking2 updatedTracking = *tracking;
+    ovrMatrix4f eyeViewMatrixTransposed[2];
+    ovrMatrix4f projectionMatrixTransposed[2];
 
     ovrMatrix4f translation = ovrMatrix4f_CreateTranslation(-shipPosition.x, -shipPosition.y, -shipPosition.z);
 
     ovrMatrix4f eye0 =  ovrMatrix4f_Multiply(&updatedTracking.Eye[0].ViewMatrix, &translation);
     ovrMatrix4f eye1 =  ovrMatrix4f_Multiply(&updatedTracking.Eye[1].ViewMatrix, &translation);
 
-    ovrMatrix4f eyeViewMatrixTransposed[2];
     eyeViewMatrixTransposed[0] = ovrMatrix4f_Transpose(&eye0);
     eyeViewMatrixTransposed[1] = ovrMatrix4f_Transpose(&eye1);
 
-    ovrMatrix4f projectionMatrixTransposed[2];
     projectionMatrixTransposed[0] = ovrMatrix4f_Transpose(&updatedTracking.Eye[0].ProjectionMatrix);
     projectionMatrixTransposed[1] = ovrMatrix4f_Transpose(&updatedTracking.Eye[1].ProjectionMatrix);
 
@@ -777,9 +833,8 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
                 scene->SceneMatrices));
         if (scene->Program.UniformLocation[UNIFORM_VIEW_ID] >= 0) // NOTE: will not be present when multiview path is enabled.
         {
-            GL(glUniform1i(scene->Program.UniformLocation[UNIFORM_VIEW_ID], eye)); // projection?
+            GL(glUniform1i(scene->Program.UniformLocation[UNIFORM_VIEW_ID], eye));
         }
-
         GL(glEnable(GL_SCISSOR_TEST));
         GL(glDepthMask(GL_TRUE));
         GL(glEnable(GL_DEPTH_TEST));
@@ -791,6 +846,7 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
         GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         GL(render_frame(0));
+        GL(game_draw_hud_stuff());
 
         // POST DRAW
         GL(glUseProgram(0));
@@ -802,7 +858,6 @@ ovrLayerProjection2 ovrRenderer_RenderFrame(
     ovrFramebuffer_SetNone();
 
     return layer;
-
 }
 
 /*

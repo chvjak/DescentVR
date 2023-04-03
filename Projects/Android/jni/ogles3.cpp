@@ -1,8 +1,12 @@
 #include "VrApi_Types.h"
+#include "vr.h"
 #include <unistd.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/norm.hpp>
+
+#include <initializer_list>
+#include <algorithm>
 
 extern "C"
 {
@@ -20,6 +24,7 @@ void ogles_bm_bind_teximage_2d_with_max_alpha(grs_bitmap* bm, ubyte max_alpha);
 
 extern GLint program_with_tex_id;
 extern ubyte gr_current_pal[256*3];
+extern GLint ortho_program_id;
 
 void draw_with_texture(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* colors, GLint texture_slot_id) {
     glBindTexture(GL_TEXTURE_2D, texture_slot_id);
@@ -164,6 +169,97 @@ bool g3_draw_bitmap_ogles(g3s_point *pos, fix width, fix height, grs_bitmap *bm)
 
     return 0;
 
+}
+
+auto identity = glm::mat4(1.0f);;
+void draw_char(int nv, GLfloat* vertices, GLfloat* tex_coords, GLfloat* colors, glm::mat4 &projection) {
+    GL(glUseProgram(ortho_program_id));
+
+    GL(glUniformMatrix4fv(glGetUniformLocation(ortho_program_id, "projection"), 1, GL_FALSE, &projection[0][0]));
+    GL(glUniformMatrix4fv(glGetUniformLocation(ortho_program_id, "view"), 1, GL_FALSE, &identity[0][0]));
+    GL(glUniformMatrix4fv(glGetUniformLocation(ortho_program_id, "model"), 1, GL_FALSE, &identity[0][0]));
+
+    GLint vpos_location = glGetAttribLocation(ortho_program_id, "vPos");
+    GL(glEnableVertexAttribArray(vpos_location));
+    GL(glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)vertices));
+
+    GLint vcolors_location = glGetAttribLocation(ortho_program_id, "vColors");
+    GL(glEnableVertexAttribArray(vcolors_location));
+    GL(glVertexAttribPointer(vcolors_location, 3, GL_FLOAT, GL_FALSE, 0, (void*)colors));
+
+    GLint vtex_coords_location = glGetAttribLocation(program_with_tex_id, "vTexCoords");
+    glEnableVertexAttribArray(vtex_coords_location);
+    glVertexAttribPointer(vtex_coords_location, 2, GL_FLOAT, GL_FALSE, 0, (void*)tex_coords);
+
+    // Gets the location of the uniform holding texture sampler
+    GLuint texUni = glGetUniformLocation(program_with_tex_id, "texSampler");
+
+    // Sets the value of the uniform
+    glUniform1i(texUni, 0);
+
+    GL(glDrawArrays(GL_TRIANGLE_FAN, 0, nv));
+
+    glDisableVertexAttribArray(vpos_location);
+    glDisableVertexAttribArray(vcolors_location);
+    glDisableVertexAttribArray(vtex_coords_location);
+    glUseProgram(0);
+}
+
+extern ubyte* gr_bitblt_fade_table;
+extern grs_canvas * grd_curcanv;    //active canvas
+void scale_bitmap_ogles(grs_bitmap* bm, int x0, int y0, int x1, int y1) {
+    GLfloat alpha = 1.0f;
+    float w = grd_curcanv->cv_bitmap.bm_w;
+    float h = grd_curcanv->cv_bitmap.bm_h;
+
+    GLfloat vertices[] = { (float)x0 - w / 2, (float)y1 - h / 2, 1.f,
+                           (float)x1 - w / 2, (float)y1 - h / 2, 1.f,
+                           (float)x1 - w / 2, (float)y0 - h / 2, 1.f,
+                           (float)x0  - w / 2, (float)y0 - h / 2, 1.f };
+
+    GLfloat texCoords[] = { 0.f, 1.f,
+                            1.f, 1.f,
+                            1.f, 0.f,
+                            0.f, 0.f, };
+    GLfloat colors[16];
+
+    ogles_bm_bind_teximage_2d(bm);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    if (gr_bitblt_fade_table) {
+        alpha = (float)gr_bitblt_fade_table[(int)fmax(y0, 0)] / 31.0f;
+    }
+    else {
+        alpha = (float)Gr_scanline_darkening_level / (float)GR_FADE_LEVELS;
+    }
+
+    // TODO: color alpha
+    // Magic value means this is a font that needs a color
+    if (bm->avg_color == 255) {
+        auto color_component = [](int i) {return gr_current_pal[grd_curcanv->cv_font_fg_color * 3 + i] / 63.0f; };
+        auto colors1 = { color_component(0), color_component(1), color_component(2),
+                         color_component(0), color_component(1), color_component(2),
+                         color_component(0), color_component(1), color_component(2),
+                         color_component(0), color_component(1), color_component(2)};
+
+        std::copy(std::begin(colors1), std::end(colors1), std::begin(colors));
+    }
+    else {
+        auto colors1 = { 1.0f, 1.0f, 1.0f,
+                         1.0f, 1.0f, 1.0f,
+                         1.0f, 1.0f, 1.0f,
+                         1.0f, 1.0f, 1.0f};
+        std::copy(std::begin(colors1), std::end(colors1), std::begin(colors));
+    }
+
+    auto projection = glm::ortho(-w/2, w/2, h/2, -h/2, -1000.0f, 1000.0f);
+    draw_char(4, vertices, texCoords, colors, projection);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 int g3_draw_line_ogles(g3s_point *p0, g3s_point *p1) { return 1; }

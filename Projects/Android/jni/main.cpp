@@ -333,8 +333,8 @@ void android_main(struct android_app* app) {
 
     // Game init
     {
-        const int SCR_WIDTH = 800;
-        const int SCR_HEIGHT = 600; // TODO: remove this buffers
+        const int SCR_WIDTH = 1440;
+        const int SCR_HEIGHT = 1584;
 
         game_init_render_buffers(SM_800x600V15, SCR_WIDTH, SCR_HEIGHT, 1, 0, 1);
 

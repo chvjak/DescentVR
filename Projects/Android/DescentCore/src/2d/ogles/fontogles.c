@@ -12,7 +12,7 @@
 #include "fontogles.h"
 #include "types.h"
 
-#ifdef OGLES1
+#ifdef OGLES
 
 #define INFONT(_c) ((_c >= 0) && (_c <= grd_curcanv->cv_font->ft_maxchar-grd_curcanv->cv_font->ft_minchar))
 
@@ -110,6 +110,4 @@ void gr_scale_string_ogles(int x, int y, fix scale_x, fix scale_y, unsigned char
 	}
 	
 }
-#else
-void gr_scale_string_ogles(int x, int y, fix scale_x, fix scale_y, unsigned char * s) {}
 #endif

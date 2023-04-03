@@ -1,6 +1,6 @@
 LOCAL_PATH := $(call my-dir)
 
-FLUIDSYNTH_PATH := $(FLUIDSYNTH_PATH)/
+FLUIDSYNTH_PATH := $(LOCAL_PATH)/../../../../FluidSynth/
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := fluidsynth
@@ -67,16 +67,10 @@ LOCAL_MODULE := ogg
 LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libogg.so
 include $(PREBUILT_SHARED_LIBRARY)
 
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := omp
-LOCAL_SRC_FILES := C:/Users/Dmytro/AppData/Local/Android/Sdk/ndk/22.1.7171670/toolchains/llvm/prebuilt/windows-x86_64/lib64/clang/11.0.5/lib/linux/aarch64/libomp.so
-include $(PREBUILT_SHARED_LIBRARY)
-
 include $(CLEAR_VARS)
 LOCAL_MODULE := descentvr
 
-LOCAL_CFLAGS += -DANDROID_NDK -DDISABLE_IMPORTGL -DOGLES -DNASM -DNETWORK
+LOCAL_CFLAGS += -DANDROID_NDK -DDISABLE_IMPORTGL -DOGLES -DNASM -DNETWORK -DRELEASE
 
 DESCENT_PATH := $(LOCAL_PATH)/../DescentCore/src/
 
@@ -110,12 +104,12 @@ LOCAL_SRC_FILES := main.cpp \
                    ogles3.cpp \
                    $(FILE_LIST:$(LOCAL_PATH)/%=%)
 
-LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl  -lGLESv3
+LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl -lGLESv3 -lomp
 
 LOCAL_LDFLAGS := -u ANativeActivity_onCreate -fuse-ld=bfd
 
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
-LOCAL_SHARED_LIBRARIES := vrapi fluidsynth omp instpatch gobject gthread glib sndfile oboe c++_shared pcre vorbisenc FLAC opus vorbis ogg
+LOCAL_SHARED_LIBRARIES := vrapi fluidsynth instpatch gobject gthread glib sndfile oboe c++_shared pcre vorbisenc FLAC opus vorbis ogg
 
 include $(BUILD_SHARED_LIBRARY)
 

@@ -260,7 +260,7 @@ out vec3 aColors;\n\
  \n\
 void main()\n\
 {\n\
-	gl_Position = sm.ProjectionMatrix[VIEW_ID] * ( sm.ViewMatrix[VIEW_ID] * ( vec4( vertexPosition, 1.0 ) ) );\n\
+    gl_Position = sm.ProjectionMatrix[VIEW_ID] * ( sm.ViewMatrix[VIEW_ID] * ( vec4( vertexPosition, 1.0 ) ) );\n\
 	aTexCoords = vTexCoords;\n\
 	aColors = vertexColor;\n\
 }\n";
@@ -286,6 +286,47 @@ void main()\n\
         }\n\
     }\
 }";
+
+static const char* vertex_shader_with_tex_text =
+        R"(#version 300 es
+#extension GL_OVR_multiview2 : enable
+layout(num_views=2) in;
+
+in vec3 vPos;
+in vec3 vColors;
+in vec2 vTexCoords;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+out vec2 aTexCoords;
+out vec3 aColors;
+
+void main()
+{
+    gl_Position =  projection * view * model * vec4(vPos * 0.4, 1.0) ;
+    aTexCoords = vTexCoords;
+    aColors = vColors;
+})";
+
+static const char* fragment_shader_with_tex_text =
+        R"(#version 300 es
+in vec3 aColors;
+in vec2 aTexCoords;
+
+uniform sampler2D texSampler;
+
+out lowp vec4 outColor;
+void main()
+{
+    vec4 sample1 = texture(texSampler, aTexCoords);
+    if (sample1.a == 0.0f) {
+        outColor = sample1;
+    } else {
+        outColor = mix(sample1, vec4(aColors, 1.f), 0.5);
+    }
+})";
 
 /*
 ================================================================================
