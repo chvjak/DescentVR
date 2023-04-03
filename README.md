@@ -42,7 +42,6 @@ Things to note / FAQs:
 Known Issues:
 -------------
 * No cross hair. Just shoot, you will see where the projectiles are flying
-* Music doesn't play. No MIDI on Oculus :(
 * On some on levels above 10 - you may find yourself off place. Just fly back to start through space
 * Many more - please submit most annoying
 
