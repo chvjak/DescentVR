@@ -16,7 +16,7 @@ Installation
 ------------
 1. Download .apk file from Release section
 2. Use SideQuest to install the .apk to your Quest
-3. Use SideQuest to copy descent.hog and descent.pig from Descent game folder on your PC to the /sdcard/DescentVR folder on your Quest
+3. Use SideQuest to copy descent.hog and descent.pig from Descent game folder on your PC to DescentVR folder on your Quest
 4. Find DescentVR in Unknown Sources section of your Oculus Apps
 5. Grant requested permissions on the first launch
 6. Enjoy!
