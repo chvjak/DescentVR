@@ -104,9 +104,9 @@ LOCAL_SRC_FILES := main.cpp \
                    ogles3.cpp \
                    $(FILE_LIST:$(LOCAL_PATH)/%=%)
 
-LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl -lGLESv3 -lomp
+LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl -lGLESv3
 
-LOCAL_LDFLAGS := -u ANativeActivity_onCreate -fuse-ld=bfd
+LOCAL_LDFLAGS := -u ANativeActivity_onCreate -fopenmp -fuse-ld=bfd
 
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
 LOCAL_SHARED_LIBRARIES := vrapi fluidsynth instpatch gobject gthread glib sndfile oboe c++_shared pcre vorbisenc FLAC opus vorbis ogg
