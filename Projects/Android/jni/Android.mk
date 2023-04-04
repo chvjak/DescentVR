@@ -68,6 +68,11 @@ LOCAL_SRC_FILES := $(FLUIDSYNTH_PATH)/lib/arm64-v8a/libogg.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
+LOCAL_MODULE := omp
+LOCAL_SRC_FILES := $(NDK_TOOLCHAIN_LIB_DIR)/$(TARGET_TOOLCHAIN_ARCH_LIB_DIR)/libomp.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
 LOCAL_MODULE := descentvr
 
 LOCAL_CFLAGS += -DANDROID_NDK -DDISABLE_IMPORTGL -DOGLES -DNASM -DNETWORK -DRELEASE
@@ -106,10 +111,10 @@ LOCAL_SRC_FILES := main.cpp \
 
 LOCAL_LDLIBS := -lEGL -lOpenSLES -landroid -llog -ldl -lGLESv3
 
-LOCAL_LDFLAGS := -u ANativeActivity_onCreate -fopenmp -fuse-ld=bfd
+LOCAL_LDFLAGS := -u ANativeActivity_onCreate -fuse-ld=bfd
 
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
-LOCAL_SHARED_LIBRARIES := vrapi fluidsynth instpatch gobject gthread glib sndfile oboe c++_shared pcre vorbisenc FLAC opus vorbis ogg
+LOCAL_SHARED_LIBRARIES := vrapi fluidsynth instpatch gobject gthread glib sndfile oboe c++_shared pcre vorbisenc FLAC opus vorbis ogg omp
 
 include $(BUILD_SHARED_LIBRARY)
 
