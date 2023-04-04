@@ -1103,7 +1103,8 @@ void ovrApp_HandleInput(ovrApp * app )
         next_secondary_weapon = true;
     }
 
-    if((offHandTrackedRemoteState->Buttons & ovrButton_Y))
+    // cycle weapon
+    if((dominantTrackedRemoteState->Buttons & ovrButton_A))
     {
         next_primary_weapon = true;
     }
