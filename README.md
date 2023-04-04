@@ -14,7 +14,7 @@ You can purchase it from https://store.steampowered.com/app/273570/Descent/.
 
 Installation
 ------------
-1. Download .apk file from Release section
+1. Download .apk file from [Releases](https://github.com/chvjak/DescentVR/releases) section
 2. Use SideQuest to install the .apk to your Quest
 3. Use SideQuest to copy descent.hog and descent.pig from Descent game folder on your PC to DescentVR folder on your Quest
 4. Find DescentVR in Unknown Sources section of your Oculus Apps
@@ -26,7 +26,7 @@ Controls:
 * Dominant-Hand trigger - Fire primary weapon
 * Off-Hand trigger - Fire secondary weapon
 * X Button - Next primary weapon
-* Y Button - Next secondary weapon
+* A Button - Next secondary weapon
 * Left Thumbstick up/down - move forward/backward
 * Right Thumbstick - strafe up/down/left/right
 * Right Thumbstick click - Next level
@@ -41,9 +41,11 @@ Things to note / FAQs:
 
 Known Issues:
 -------------
-* No cross hair. Just shoot, you will see where the projectiles are flying
 * On some on levels above 10 - you may find yourself off place. Just fly back to start through space
-* Many more - please submit most annoying
+* Some lighting is off
+* Exploding doors are not rendered correctly
+* Hostages are not rendered correctly
+* Many more - please submit the most annoying
 
 Contributing
 ------------
