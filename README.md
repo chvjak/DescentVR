@@ -12,12 +12,14 @@ Gameplay videos
 [![Demo2](https://img.youtube.com/vi/6hk1WnwpyaI/0.jpg)](https://youtu.be/6hk1WnwpyaI)
 
 
-Important Note
+Copying game resource files
 ---------------
 This project is far from being ready, but you can already relive the nostalgia by roaming around the levels you may have forgotten.
 
 This is just an engine port, so you will need to provide the resource files (descent.hog and descent.pig) yourself by copying them from the Descent copy you own.
 You can purchase it from https://store.steampowered.com/app/273570/Descent/.
+
+Here is how to copy the files on to the Quest:
 
 [![How-to](https://img.youtube.com/vi/b4w__I0EF2k/0.jpg)](https://youtu.be/b4w__I0EF2k)
 
