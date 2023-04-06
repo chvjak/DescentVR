@@ -5,12 +5,22 @@ This is a source port of the original DOS game “Descent” for Oculus Quest 2.
 The easiest way to install this on your Quest is using SideQuest, download SideQuest here:
 https://sidequestvr.com/
 
+Gameplay videos
+---------------
+[![Demo1](https://img.youtube.com/vi/j4HTaqGv4dE/0.jpg)](https://youtu.be/j4HTaqGv4dE)
+
+[![Demo2](https://img.youtube.com/vi/6hk1WnwpyaI/0.jpg)](https://youtu.be/6hk1WnwpyaI)
+
+
 Important Note
 ---------------
 This project is far from being ready, but you can already relive the nostalgia by roaming around the levels you may have forgotten.
 
 This is just an engine port, so you will need to provide the resource files (descent.hog and descent.pig) yourself by copying them from the Descent copy you own.
 You can purchase it from https://store.steampowered.com/app/273570/Descent/.
+
+[![How-to](https://img.youtube.com/vi/b4w__I0EF2k/0.jpg)](https://youtu.be/b4w__I0EF2k)
+
 
 Installation
 ------------
