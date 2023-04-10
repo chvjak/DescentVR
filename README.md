@@ -55,7 +55,6 @@ Known Issues:
 -------------
 * On some on levels above 10 - you may find yourself off place. Just fly back to start through space
 * Some lighting is off
-* Exploding doors are not rendered correctly
 * Hostages are not rendered correctly
 * Many more - please submit the most annoying
 
