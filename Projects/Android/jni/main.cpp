@@ -41,6 +41,8 @@ extern "C"
 #include <palette.h>
 #include <timer.h>
 #include <3d.h>
+#include "fireball.h"
+
 }
 
 #include <fcntl.h>
@@ -456,6 +458,7 @@ void android_main(struct android_app* app) {
 
             do_ai_frame_all();
             object_move_all();
+            do_exploding_wall_frame();
             do_special_effects();
             wall_frame_process();
             triggers_frame_process();
@@ -510,12 +513,12 @@ void android_main(struct android_app* app) {
 
             if(next_primary_weapon) {
                 next_primary_weapon = false;
-                try_switch_weapon(1);
+                try_switch_weapon(0);
             }
 
             if(next_secondary_weapon) {
                 next_secondary_weapon = false;
-                try_switch_weapon(0);
+                try_switch_weapon(1);
             }
 
         }
