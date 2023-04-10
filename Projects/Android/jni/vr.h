@@ -280,7 +280,7 @@ void main()\n\
     {\
         vec4 sample1 = texture(texSampler, aTexCoords);\n\
         if (sample1.a == 0.0f) {\n\
-            outColor = sample1;\n\
+            discard;\n\
         } else {\n\
             outColor = mix(sample1, vec4(aColors, 1.f), 0.5);\n\
         }\n\
