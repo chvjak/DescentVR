@@ -46,10 +46,8 @@ Controls:
 
 Things to note / FAQs:
 ----------------------
-* Player is "ephemeral" - you can go through walls
 * Player is invulnerable
 * All weapons are available from start
-* End level sequence is not triggered but can still switch the levels manually
 
 Known Issues:
 -------------
