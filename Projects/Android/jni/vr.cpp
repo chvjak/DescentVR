@@ -39,6 +39,8 @@ extern "C"
 extern "C"
 {
 #include <render.h>
+#include "kconfig.h"
+
 }
 
 extern glm::vec3 shipPosition ;
@@ -972,6 +974,11 @@ ovrInputStateTrackedRemote rightTrackedRemoteState_new;
 ovrInputStateTrackedRemote leftTrackedRemoteState_old;
 ovrInputStateTrackedRemote leftTrackedRemoteState_new;
 
+
+extern control_info Controls;
+extern fix FrameTime;
+
+
 void ovrApp_HandleInput(ovrApp * app )
 {
     for ( int i = 0; ; i++ ) {
@@ -1008,7 +1015,8 @@ void ovrApp_HandleInput(ovrApp * app )
     ovrInputStateTrackedRemote *offHandTrackedRemoteState = &leftTrackedRemoteState_new;
     ovrInputStateTrackedRemote *offHandTrackedRemoteStateOld = &leftTrackedRemoteState_old;
 
-    float speed = 0.5;
+    fix speed = 1;
+    memset(&Controls, 0, sizeof(control_info));
 
     //Right-hand specific stuff
     {
@@ -1016,23 +1024,24 @@ void ovrApp_HandleInput(ovrApp * app )
         int rightJoyState = (rightTrackedRemoteState_new.Joystick.x > 0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x > 0.7f ? 1 : 0)) {
             // strafe right
-            shipPosition += right * speed;
+            Controls.sideways_thrust_time = speed * FrameTime;
+
         }
         rightJoyState = (rightTrackedRemoteState_new.Joystick.x < -0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x < -0.7f ? 1 : 0)) {
             // strafe left
-            shipPosition -=  right * speed;
+            Controls.sideways_thrust_time = -speed * FrameTime;
         }
 
         rightJoyState = (rightTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // strafe up
-            shipPosition -= up * speed;
+            Controls.vertical_thrust_time = -speed * FrameTime;
         }
         rightJoyState = (rightTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
             // strafe down
-            shipPosition +=  up * speed;;
+            Controls.vertical_thrust_time = speed * FrameTime;
         }
 
     }
@@ -1056,14 +1065,14 @@ void ovrApp_HandleInput(ovrApp * app )
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
             // move forward
             ALOGV("move forward");
-            shipPosition += forward * speed;
+            Controls.forward_thrust_time = speed * FrameTime;
         }
 
         leftJoyState = (leftTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // move backward
             ALOGV("move backward");
-            shipPosition -= forward * speed;;
+            Controls.forward_thrust_time = -speed * FrameTime;
         }
     }
 

@@ -150,6 +150,8 @@ void StartLevel(int level)
     Players[Player_num].primary_weapon_flags = 0xff;
     Players[Player_num].secondary_weapon_flags = 0xff;
 
+    ConsoleObject->mtype.phys_info.flags &= ~(PF_WIGGLE);
+
     for (int i = 0; i<MAX_PRIMARY_WEAPONS; i++)
         Players[Player_num].primary_ammo[i] = Primary_ammo_max[i];
 
@@ -467,8 +469,7 @@ void android_main(struct android_app* app) {
             triggers_frame_process();
             update_object_seg(ConsoleObject);
 
-            ConsoleObject->pos = (vms_vector) {fl2f(shipPosition.x), fl2f(shipPosition.y), fl2f(-shipPosition.z)};
-
+            shipPosition = { f2fl(ConsoleObject->pos.x), f2fl(ConsoleObject->pos.y), -f2fl(ConsoleObject->pos.z) };
 
             ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
 
