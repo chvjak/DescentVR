@@ -712,8 +712,4 @@ void ovrApp_HandleInput(ovrApp* app) ;
 
 void ovrApp_HandleVrApiEvents(ovrApp* app);
 
-extern ovrVector3f shipPosition;
-extern int fire_secondary;
-extern int fire_primary;
-
 #endif

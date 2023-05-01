@@ -112,7 +112,10 @@ static void app_handle_cmd(struct android_app* app, int32_t cmd) {
 extern AAssetManager* Asset_manager;
 extern "C" int allowed_to_fire_missile(void);
 
-ovrVector3f up, forward, right;
+glm::vec3 up, forward, right;
+glm::vec3 shipPosition;
+int fire_secondary;
+int fire_primary;
 
 bool next_level = false;
 bool prev_level = false;
@@ -465,6 +468,7 @@ void android_main(struct android_app* app) {
             update_object_seg(ConsoleObject);
 
             ConsoleObject->pos = (vms_vector) {fl2f(shipPosition.x), fl2f(shipPosition.y), fl2f(-shipPosition.z)};
+
 
             ovrMatrix4f mat = ovrMatrix4f_CreateFromQuaternion(&tracking.HeadPose.Pose.Orientation);
 

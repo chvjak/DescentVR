@@ -34,11 +34,22 @@ extern "C"
 #include "VrApi_SystemUtils.h"
 #include "VrApi_Input.h"
 #include "vr.h"
+#include "glm/vec3.hpp"
 
 extern "C"
 {
 #include <render.h>
 }
+
+extern glm::vec3 shipPosition ;
+extern glm::vec3 up, forward, right;
+
+extern int fire_secondary;
+extern int fire_primary;
+extern bool next_level;
+extern bool prev_level;
+extern bool next_primary_weapon;
+extern bool next_secondary_weapon;
 
 /*
 ================================================================================
@@ -961,21 +972,6 @@ ovrInputStateTrackedRemote rightTrackedRemoteState_new;
 ovrInputStateTrackedRemote leftTrackedRemoteState_old;
 ovrInputStateTrackedRemote leftTrackedRemoteState_new;
 
-ovrVector3f vecmul(ovrVector3f f, float speed);
-
-ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1);
-
-ovrVector3f shipPosition = {0, 0, 0};
-
-int fire_secondary = false;
-int fire_primary = false;
-
-extern ovrVector3f up, forward, right;
-extern bool next_level;
-extern bool prev_level;
-extern bool next_primary_weapon;
-extern bool next_secondary_weapon;
-
 void ovrApp_HandleInput(ovrApp * app )
 {
     for ( int i = 0; ; i++ ) {
@@ -1020,23 +1016,23 @@ void ovrApp_HandleInput(ovrApp * app )
         int rightJoyState = (rightTrackedRemoteState_new.Joystick.x > 0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x > 0.7f ? 1 : 0)) {
             // strafe right
-            shipPosition = vecadd(shipPosition, vecmul(right, speed));
+            shipPosition += right * speed;
         }
         rightJoyState = (rightTrackedRemoteState_new.Joystick.x < -0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.x < -0.7f ? 1 : 0)) {
             // strafe left
-            shipPosition = vecadd(shipPosition, vecmul(right, -speed));
+            shipPosition -=  right * speed;
         }
 
         rightJoyState = (rightTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // strafe up
-            shipPosition = vecadd(shipPosition, vecmul(up, -speed));
+            shipPosition -= up * speed;
         }
         rightJoyState = (rightTrackedRemoteState_new.Joystick.y > 0.7f ? 1 : 0);
         if (rightJoyState != (rightTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
             // strafe down
-            shipPosition = vecadd(shipPosition, vecmul(up, speed));
+            shipPosition +=  up * speed;;
         }
 
     }
@@ -1060,14 +1056,14 @@ void ovrApp_HandleInput(ovrApp * app )
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y > 0.7f ? 1 : 0)) {
             // move forward
             ALOGV("move forward");
-            shipPosition = vecadd(shipPosition, vecmul(forward, speed));
+            shipPosition += forward * speed;
         }
 
         leftJoyState = (leftTrackedRemoteState_new.Joystick.y < -0.7f ? 1 : 0);
         if (leftJoyState != (leftTrackedRemoteState_old.Joystick.y < -0.7f ? 1 : 0)) {
             // move backward
             ALOGV("move backward");
-            shipPosition = vecadd(shipPosition, vecmul(forward, -speed));
+            shipPosition -= forward * speed;;
         }
     }
 
@@ -1109,14 +1105,6 @@ void ovrApp_HandleInput(ovrApp * app )
         next_primary_weapon = true;
     }
 
-}
-
-ovrVector3f vecadd(ovrVector3f f, ovrVector3f f1) {
-    return (ovrVector3f){f.x + f1.x, f.y + f1.y, f.z + f1.z};
-}
-
-ovrVector3f vecmul(ovrVector3f f, float speed) {
-    return (ovrVector3f){f.x * speed, f.y* speed, f.z * speed};
 }
 
 void ovrApp_HandleVrApiEvents(ovrApp* app) {
