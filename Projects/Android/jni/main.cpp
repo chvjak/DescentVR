@@ -42,6 +42,7 @@ extern "C"
 #include <timer.h>
 #include <3d.h>
 #include "fireball.h"
+#include "endlevel.h"
 
 }
 
@@ -461,13 +462,25 @@ void android_main(struct android_app* app) {
             calc_frame_time();
             GameTime += FrameTime;
 
-            do_ai_frame_all();
-            object_move_all();
-            do_exploding_wall_frame();
-            do_special_effects();
-            wall_frame_process();
-            triggers_frame_process();
-            update_object_seg(ConsoleObject);
+            if (Endlevel_sequence) {
+                do_endlevel_frame();
+                do_special_effects();
+
+                if(Endlevel_sequence == 4) // EL_STOPPED
+                {
+                    next_level = true;
+                    Endlevel_sequence = 0;
+                }
+            }
+            else {
+                do_ai_frame_all();
+                object_move_all();
+                do_exploding_wall_frame();
+                do_special_effects();
+                wall_frame_process();
+                triggers_frame_process();
+                update_object_seg(ConsoleObject);
+            }
 
             shipPosition = { f2fl(ConsoleObject->pos.x), f2fl(ConsoleObject->pos.y), -f2fl(ConsoleObject->pos.z) };
 

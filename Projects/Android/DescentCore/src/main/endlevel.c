@@ -535,7 +535,7 @@ void start_endlevel_sequence()
 		old_segnum = ConsoleObject->segnum;
 		exit_side = find_exit_side(ConsoleObject);
 		segnum = Segments[old_segnum].children[exit_side];
-		i=tunnel_length/3;
+		i=tunnel_length/2;
 		while (i--) {
 			entry_side = matt_find_connect_side(segnum,old_segnum);
 			exit_side = Side_opposite[entry_side];
@@ -1001,7 +1001,7 @@ void do_endlevel_frame()
 			if (ConsoleObject->segnum == transition_segnum) {
 				int objnum;
 
-				Endlevel_sequence = EL_LOOKBACK;
+				Endlevel_sequence = EL_STOPPED;
 
 				objnum = obj_create(OBJ_CAMERA, 0, 
 					ConsoleObject->segnum,&ConsoleObject->pos,&ConsoleObject->orient,0,
@@ -1394,7 +1394,12 @@ void endlevel_render_mine(fix eye_offset)
 		g3_set_view_matrix(&Viewer_eye,&viewm,Render_zoom);
 	}
 	else
-		g3_set_view_matrix(&Viewer_eye,&Viewer->orient,Render_zoom);
+	{
+		vms_vector	temp_pos = ZERO_VECTOR;
+		vms_matrix	temp_view = IDENTITY_MATRIX;
+
+		g3_set_view_matrix(&temp_pos, &temp_view, F1_0);
+	}
 
 	render_mine(start_seg_num,eye_offset);
 }
